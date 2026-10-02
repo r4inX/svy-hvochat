@@ -1,0 +1,22 @@
+<div class="hvochat-composer" [class]="styleClass()" [class.hvochat-composer--fill]="isFillLayout()" #element>
+  <hvochat-internal-composer
+    [(text)]="draft"
+    [markupId]="servoyApi.getMarkupId()"
+    [tabSeq]="tabSeq()"
+    [placeholder]="placeholderText()"
+    [submitMode]="submitMode()"
+    [busy]="busy()"
+    [enabled]="enabled()"
+    [readOnly]="readOnly()"
+    [maxHeight]="maxHeight()"
+    [maxLength]="maxLength()"
+    [showSendButton]="showSendButton()"
+    [sendLabel]="sendButtonText()"
+    [cancelLabel]="cancelButtonText()"
+    [fillHeight]="isFillLayout()"
+    (submitted)="onSubmitted($event)"
+    (cancelled)="onCancelled($event)"
+    (focused)="onFocus()"
+    (blurred)="pushDraft()">
+  </hvochat-internal-composer>
+</div>

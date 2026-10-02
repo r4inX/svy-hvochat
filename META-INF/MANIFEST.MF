@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Bundle-Name: HVO Chat
+Bundle-SymbolicName: hvochat
+Bundle-Version: 1.0.2
+Package-Type: Web-Component
+NPM-PackageName: @hvo/chat
+NG2-Module: HvoChatModule
+Entry-Point: dist/hvo/chat
+NG2-CSS-ClientLibs: ~@hvo/chat/assets/hvochat.css
+
+Name: composer/composer.spec
+Web-Component: True
+
+Name: thread/thread.spec
+Web-Component: True
+

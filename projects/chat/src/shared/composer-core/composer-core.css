@@ -1,0 +1,118 @@
+/* Optik nach assistant-ui (thread.aui.tsx: Composer). Farben/Masse ueber --hvochat-* ueberschreibbar
+   (nur lesen mit Fallback, nie hier definieren -> styleClass der Solution kann sie setzen). */
+:host {
+    display: block;
+    width: 100%;
+}
+
+.hvochat-cc {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--hvochat-composer-padding, 8px);
+    border: 1px solid var(--hvochat-border, rgba(23, 23, 23, 0.1));
+    border-radius: var(--hvochat-radius, 1rem);
+    background: var(--hvochat-composer-bg, rgba(245, 245, 245, 0.3));
+    cursor: text;
+    transition: border-color 0.15s ease;
+}
+
+.hvochat-cc:focus-within {
+    border-color: var(--hvochat-border-focus, rgba(23, 23, 23, 0.25));
+}
+
+.hvochat-cc--disabled {
+    cursor: default;
+    opacity: 0.65;
+}
+
+.hvochat-cc-input {
+    display: block;
+    width: 100%;
+    min-height: 2.5rem;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0.25rem 0.625rem;
+    border: 0;
+    outline: none;
+    resize: none;
+    background: transparent;
+    color: var(--hvochat-foreground, inherit);
+    font: inherit;
+    font-size: var(--hvochat-font-size, 1rem);
+    line-height: 1.5rem;
+    caret-color: var(--hvochat-primary, #171717);
+    overflow-y: hidden;
+}
+
+.hvochat-cc-input::placeholder {
+    color: var(--hvochat-placeholder, rgba(115, 115, 115, 0.6));
+    opacity: 1;
+}
+
+.hvochat-cc-input:disabled {
+    cursor: default;
+}
+
+/* Absolute-Layout: Box-Hoehe fuellen, Textarea nimmt den Rest ein */
+.hvochat-cc--fill {
+    height: 100%;
+}
+
+.hvochat-cc--fill .hvochat-cc-input {
+    flex: 1 1 auto;
+    min-height: 1.5rem;
+}
+
+.hvochat-cc-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.375rem;
+}
+
+.hvochat-cc-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 0;
+    border-radius: 9999px;
+    background: var(--hvochat-primary, #171717);
+    color: var(--hvochat-primary-foreground, #fafafa);
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.hvochat-cc-btn:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+.hvochat-cc-btn:active:not(:disabled) {
+    transform: scale(0.92);
+}
+
+.hvochat-cc-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.hvochat-cc-btn:focus-visible {
+    outline: 2px solid var(--hvochat-border-focus, rgba(23, 23, 23, 0.25));
+    outline-offset: 2px;
+}
+
+.hvochat-cc-send hvochat-internal-icon {
+    width: 1rem;
+    height: 1rem;
+}
+
+.hvochat-cc-cancel hvochat-internal-icon {
+    width: 0.875rem;
+    height: 0.875rem;
+}

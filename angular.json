@@ -1,0 +1,53 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "cli": { "analytics": false },
+  "newProjectRoot": "projects",
+  "projects": {
+    "@hvo/chat": {
+      "projectType": "library",
+      "root": "projects/chat",
+      "sourceRoot": "projects/chat/src",
+      "prefix": "hvochat",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "options": {
+            "tsConfig": "projects/chat/tsconfig.lib.json",
+            "project": "projects/chat/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/chat/tsconfig.lib.prod.json"
+            }
+          }
+        }
+      }
+    },
+    "demo": {
+      "projectType": "application",
+      "root": "projects/demo",
+      "sourceRoot": "projects/demo/src",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "projects/demo/src/main.ts",
+            "index": "projects/demo/src/index.html",
+            "tsConfig": "projects/demo/tsconfig.app.json",
+            "outputPath": "out-tsc/demo-app",
+            "styles": ["projects/chat/assets/hvochat.css"]
+          },
+          "configurations": {
+            "development": { "optimization": false, "sourceMap": true }
+          },
+          "defaultConfiguration": "development"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": { "buildTarget": "demo:build:development", "port": 4300 }
+        }
+      }
+    }
+  }
+}

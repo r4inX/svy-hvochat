@@ -1,0 +1,16 @@
+{
+  "name": "@hvo/chat",
+  "version": "1.0.2",
+  "peerDependencies": {
+    "@angular/common": "^21",
+    "@angular/core": "^21",
+    "@angular/forms": "^21",
+    "@angular/platform-browser": "^21"
+  },
+  "dependencies": {
+    "dompurify": "^3.4.0",
+    "marked": "^18.0.0",
+    "tslib": "*"
+  },
+  "license": "UNLICENSED"
+}

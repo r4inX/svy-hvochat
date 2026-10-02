@@ -1,0 +1,22 @@
+<div style="display:grid; grid-template-columns: 1fr 320px; gap: 24px; padding: 24px; font-family: system-ui, sans-serif;">
+  <div>
+    <h3 style="margin:0 0 8px">hvochat-thread (Absolute-Layout, 640px hoch)</h3>
+    <div class="demo-hvo-theme" style="height: 640px; border: 1px dashed #bbb;">
+      <hvochat-thread #thread
+        [servoyApi]="threadApi" name="thread1"
+        [messages]="messages" [busy]="busy" [suggestions]="suggestions"
+        [allowFeedback]="true" [allowSpeak]="true"
+        [onSubmit]="onSubmit" [onCancel]="onCancel" [onReload]="onReload" [onEdit]="onEdit"
+        [onFeedback]="onFeedback" [onBranchChange]="onBranchChange" [onSourceClick]="onSourceClick">
+      </hvochat-thread>
+    </div>
+  </div>
+  <div>
+    <h3 style="margin:0 0 8px">hvochat-composer (Responsive)</h3>
+    <hvochat-composer [servoyApi]="composerApi" name="composer1" [onSubmit]="onComposerSubmit" [maxHeight]="120"></hvochat-composer>
+    <h3 style="margin:24px 0 8px">Handler-Log</h3>
+    <div id="log" style="font: 12px ui-monospace, monospace; background:#f6f6f6; padding:8px; min-height:200px;">
+      @for (l of log; track $index) { <div>{{ l }}</div> }
+    </div>
+  </div>
+</div>

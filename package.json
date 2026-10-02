@@ -1,0 +1,37 @@
+{
+  "name": "hvochat",
+  "version": "1.0.2",
+  "description": "HVO Chat - Servoy Titanium Web-Package (Servoy 2026.6.0)",
+  "scripts": {
+    "ng": "ng",
+    "build": "ng build @hvo/chat --configuration production",
+    "build_debug": "ng build @hvo/chat --watch",
+    "build_debug_nowatch": "ng build @hvo/chat --watch=false",
+    "make_release": "ng build @hvo/chat --configuration production && node scripts/build.js",
+    "validate": "node scripts/validate-package.mjs .",
+    "demo": "ng serve demo"
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/common": "21.2.16",
+    "@angular/core": "21.2.16",
+    "@angular/forms": "21.2.16",
+    "@angular/platform-browser": "21.2.16",
+    "@servoy/public": "2026.3.0",
+    "dompurify": "3.4.16",
+    "marked": "18.0.14",
+    "rxjs": "7.8.2",
+    "tslib": "2.8.1",
+    "zone.js": "0.16.2"
+  },
+  "devDependencies": {
+    "@angular/build": "~21.2.14",
+    "@angular/cli": "~21.2.14",
+    "@angular/compiler": "21.2.16",
+    "@angular/compiler-cli": "21.2.16",
+    "@angular/platform-browser-dynamic": "21.2.16",
+    "adm-zip": "^0.5.17",
+    "ng-packagr": "^21.0.0",
+    "typescript": "~5.9.3"
+  }
+}

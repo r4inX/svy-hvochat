@@ -1,0 +1,22 @@
+/* Die Komponente fuellt die von Servoy vorgegebene Box (Absolute-Layout) bzw. waechst mit dem Inhalt (Responsive) */
+:host {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Responsive-Layout: Servoy rendert die Komponente ohne Wrapper direkt im Flex-Container */
+:host {
+    flex: 0 0 auto;
+    min-height: 0;
+}
+
+.hvochat-composer {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.hvochat-composer--fill,
+.hvochat-composer--fill hvochat-internal-composer {
+    height: 100%;
+}

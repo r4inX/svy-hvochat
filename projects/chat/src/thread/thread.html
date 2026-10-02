@@ -1,0 +1,258 @@
+<div class="hvochat-thread" [class]="styleClass()" [id]="servoyApi.getMarkupId()" #element>
+  <div class="hvochat-thread-viewport" #viewport (scroll)="onViewportScroll()">
+    <div class="hvochat-thread-inner" [class.hvochat-thread-inner--empty]="isEmpty()" [style.max-width]="contentWidth()">
+
+      <!-- ThreadEmpty / Welcome -->
+      @if (isEmpty()) {
+        <div class="hvochat-welcome"><p>{{ welcomeText() }}</p></div>
+      }
+
+      <!-- ThreadMessages -->
+      <div class="hvochat-messages">
+        @for (msg of messages() ?? []; track msg.id ?? $index; let last = $last) {
+          @if (msg.role === 'user') {
+            @if (editingId() === msg.id) {
+              <!-- EditComposer -->
+              <div class="hvochat-edit">
+                <div class="hvochat-edit-box">
+                  <textarea #editArea class="hvochat-edit-input" rows="2"
+                    [value]="editText()"
+                    (input)="onEditInput($event)"
+                    (keydown)="onEditKeyDown($event, msg)"></textarea>
+                  <div class="hvochat-edit-footer">
+                    <button type="button" class="hvochat-btn-text hvochat-btn-ghost" (click)="cancelEdit()">{{ t('editCancel') }}</button>
+                    <button type="button" class="hvochat-btn-text hvochat-btn-primary" (click)="saveEdit(msg, $event)">{{ t('editSave') }}</button>
+                  </div>
+                </div>
+              </div>
+            } @else {
+              <!-- UserMessage -->
+              <div class="hvochat-user" [class.hvochat-msg--last]="last">
+                @if (msg.images?.length) {
+                  <div class="hvochat-images hvochat-images--user">
+                    @for (img of msg.images; track $index) { <img class="hvochat-image" [src]="img" alt="" loading="lazy"> }
+                  </div>
+                }
+                <div class="hvochat-user-content-wrapper">
+                  @if (allowEdit() && onEdit() && enabled() && !busy()) {
+                    <div class="hvochat-user-actions">
+                      <button type="button" tabindex="-1" class="hvochat-icon-btn" [title]="t('edit')" [attr.aria-label]="t('edit')" (click)="startEdit(msg)">
+                        <hvochat-internal-icon name="pencil"></hvochat-internal-icon>
+                      </button>
+                    </div>
+                  }
+                  <div class="hvochat-user-content">{{ msg.text }}</div>
+                </div>
+                @if (showBranchPicker() && (msg.branchCount ?? 1) > 1) {
+                  <ng-container *ngTemplateOutlet="branchPicker; context: { $implicit: msg, align: 'end' }"></ng-container>
+                }
+              </div>
+            }
+          } @else {
+            <!-- AssistantMessage -->
+            <div class="hvochat-assistant" [class.hvochat-msg--last]="last">
+              <div class="hvochat-assistant-content">
+
+                <!-- Reasoning / ChainOfThought -->
+                @if (showReasoning() && msg.reasoning) {
+                  <div class="hvochat-reasoning">
+                    <button type="button" tabindex="-1" class="hvochat-reasoning-trigger"
+                      [attr.aria-expanded]="isReasoningOpen(msg, last)"
+                      (click)="toggle('reasoning', msg.id)">
+                      <hvochat-internal-icon name="lightbulb"></hvochat-internal-icon>
+                      <span [class.hvochat-shimmer]="isRunning(msg, last) && !msg.text">{{ t('reasoning') }}</span>
+                      <hvochat-internal-icon name="chevron-down" class="hvochat-chevron" [class.hvochat-chevron--open]="isReasoningOpen(msg, last)"></hvochat-internal-icon>
+                    </button>
+                    @if (isReasoningOpen(msg, last)) {
+                      <div class="hvochat-reasoning-text hvochat-md" [innerHTML]="msg.reasoning | hvochatMarkdown: markdown()"></div>
+                    }
+                  </div>
+                }
+
+                <!-- MessagePartText -->
+                @if (msg.text) {
+                  <div class="hvochat-md" [innerHTML]="msg.text | hvochatMarkdown: markdown()"></div>
+                } @else if (isRunning(msg, last) && !msg.reasoning) {
+                  <!-- MessagePartInProgress -->
+                  <span class="hvochat-indicator" role="status" aria-label="…">●</span>
+                }
+                @if (msg.text && isRunning(msg, last)) {
+                  <span class="hvochat-indicator hvochat-indicator--inline" aria-hidden="true">●</span>
+                }
+
+                <!-- MessagePartImage -->
+                @if (msg.images?.length) {
+                  <div class="hvochat-images">
+                    @for (img of msg.images; track $index) { <img class="hvochat-image" [src]="img" alt="" loading="lazy"> }
+                  </div>
+                }
+
+                <!-- Sources -->
+                @if (showSources() && msg.sources?.length) {
+                  <div class="hvochat-sources">
+                    <button type="button" tabindex="-1" class="hvochat-sources-trigger"
+                      [attr.aria-expanded]="expandedSources().has(msg.id)"
+                      (click)="toggle('sources', msg.id)">
+                      <span class="hvochat-sources-stack">
+                        @for (src of msg.sources!.slice(0, 3); track $index; let i = $index) {
+                          <span class="hvochat-sources-badge">{{ i + 1 }}</span>
+                        }
+                      </span>
+                      <span>{{ t('sources') }} ({{ msg.sources!.length }})</span>
+                      <hvochat-internal-icon name="chevron-down" class="hvochat-chevron" [class.hvochat-chevron--open]="expandedSources().has(msg.id)"></hvochat-internal-icon>
+                    </button>
+                    @if (expandedSources().has(msg.id)) {
+                      <div class="hvochat-sources-grid">
+                        @for (src of msg.sources; track $index; let i = $index) {
+                          <a class="hvochat-source" [attr.href]="src.url || null" target="_blank" rel="noopener noreferrer"
+                            (click)="sourceClick(msg, i, $event)">
+                            <span class="hvochat-source-index">{{ i + 1 }}</span>
+                            <span class="hvochat-source-body">
+                              <span class="hvochat-source-title">{{ src.title || src.url || ('#' + (i + 1)) }}</span>
+                              @if (src.snippet) { <span class="hvochat-source-snippet">{{ src.snippet }}</span> }
+                              @if (sourceMeta(src)) { <span class="hvochat-source-meta">{{ sourceMeta(src) }}</span> }
+                            </span>
+                          </a>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- MessageError / ErrorPrimitive -->
+                @if (msg.status === 'error' || msg.error) {
+                  <div class="hvochat-error" role="alert">{{ msg.error || 'Fehler' }}</div>
+                }
+              </div>
+
+              <!-- Footer: BranchPicker + ActionBar -->
+              @if (!isRunning(msg, last)) {
+                <div class="hvochat-assistant-footer">
+                  @if (showBranchPicker() && (msg.branchCount ?? 1) > 1) {
+                    <ng-container *ngTemplateOutlet="branchPicker; context: { $implicit: msg, align: 'start' }"></ng-container>
+                  }
+                  <div class="hvochat-actionbar" [class.hvochat-actionbar--autohide]="!last">
+                    @if (allowCopy()) {
+                      <button type="button" tabindex="-1" class="hvochat-icon-btn"
+                        [title]="copiedId() === msg.id ? t('copied') : t('copy')" [attr.aria-label]="t('copy')"
+                        (click)="copy(msg)">
+                        <hvochat-internal-icon [name]="copiedId() === msg.id ? 'check' : 'copy'"></hvochat-internal-icon>
+                      </button>
+                    }
+                    @if (allowFeedback() && onFeedback()) {
+                      <button type="button" tabindex="-1" class="hvochat-icon-btn"
+                        [class.hvochat-icon-btn--active]="msg.feedback === 'positive'"
+                        [title]="t('feedbackPositive')" [attr.aria-label]="t('feedbackPositive')"
+                        [attr.aria-pressed]="msg.feedback === 'positive'"
+                        [disabled]="!enabled()" (click)="feedback(msg, 'positive', $event)">
+                        <hvochat-internal-icon name="thumbs-up"></hvochat-internal-icon>
+                      </button>
+                      <button type="button" tabindex="-1" class="hvochat-icon-btn"
+                        [class.hvochat-icon-btn--active]="msg.feedback === 'negative'"
+                        [title]="t('feedbackNegative')" [attr.aria-label]="t('feedbackNegative')"
+                        [attr.aria-pressed]="msg.feedback === 'negative'"
+                        [disabled]="!enabled()" (click)="feedback(msg, 'negative', $event)">
+                        <hvochat-internal-icon name="thumbs-down"></hvochat-internal-icon>
+                      </button>
+                    }
+                    @if (allowSpeak()) {
+                      <button type="button" tabindex="-1" class="hvochat-icon-btn"
+                        [class.hvochat-icon-btn--active]="speakingId() === msg.id"
+                        [title]="speakingId() === msg.id ? t('stopSpeaking') : t('speak')"
+                        [attr.aria-label]="speakingId() === msg.id ? t('stopSpeaking') : t('speak')"
+                        (click)="toggleSpeak(msg)">
+                        <hvochat-internal-icon [name]="speakingId() === msg.id ? 'square' : 'volume'"></hvochat-internal-icon>
+                      </button>
+                    }
+                    @if (allowReload() && onReload()) {
+                      <button type="button" tabindex="-1" class="hvochat-icon-btn"
+                        [title]="t('reload')" [attr.aria-label]="t('reload')"
+                        [disabled]="!enabled() || busy()" (click)="reload(msg, $event)">
+                        <hvochat-internal-icon name="refresh"></hvochat-internal-icon>
+                      </button>
+                    }
+                    @if (allowExportMarkdown()) {
+                      <!-- ActionBarMore -->
+                      <div class="hvochat-more">
+                        <button type="button" tabindex="-1" class="hvochat-icon-btn"
+                          [class.hvochat-icon-btn--active]="openMenuId() === msg.id"
+                          [title]="t('more')" [attr.aria-label]="t('more')"
+                          aria-haspopup="menu" [attr.aria-expanded]="openMenuId() === msg.id"
+                          (click)="toggleMenu(msg, $event)">
+                          <hvochat-internal-icon name="more"></hvochat-internal-icon>
+                        </button>
+                        @if (openMenuId() === msg.id) {
+                          <div class="hvochat-menu" role="menu" (click)="$event.stopPropagation()">
+                            <button type="button" role="menuitem" class="hvochat-menu-item" (click)="exportMarkdown(msg)">
+                              <hvochat-internal-icon name="download"></hvochat-internal-icon>
+                              {{ t('exportMarkdown') }}
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        }
+      </div>
+
+      <!-- ViewportFooter: ScrollToBottom + Composer + Suggestions -->
+      <div class="hvochat-footer" [class.hvochat-footer--sticky]="!isEmpty()">
+        @if (!atBottom() && !isEmpty()) {
+          <button type="button" tabindex="-1" class="hvochat-scroll-bottom"
+            [title]="t('scrollToBottom')" [attr.aria-label]="t('scrollToBottom')"
+            (click)="scrollToBottom()">
+            <hvochat-internal-icon name="arrow-down"></hvochat-internal-icon>
+          </button>
+        }
+        @if (showComposer()) {
+          <hvochat-internal-composer
+            [(text)]="composerText"
+            [tabSeq]="tabSeq()"
+            [placeholder]="placeholderText()"
+            [submitMode]="submitMode()"
+            [busy]="busy()"
+            [enabled]="enabled()"
+            [maxLength]="maxLength()"
+            [sendLabel]="t('send')"
+            [cancelLabel]="t('cancel')"
+            (submitted)="onComposerSubmit($event)"
+            (cancelled)="onComposerCancel($event)">
+          </hvochat-internal-composer>
+        }
+        @if (isEmpty() && !composerText() && suggestions()?.length) {
+          <!-- ThreadSuggestions -->
+          <div class="hvochat-suggestions">
+            @for (sug of suggestions(); track $index) {
+              <button type="button" class="hvochat-suggestion" [disabled]="!enabled()" (click)="onSuggestion(sug, $event)">
+                <span class="hvochat-suggestion-prompt" aria-hidden="true">&gt;</span>
+                <span class="hvochat-suggestion-text">
+                  <span class="hvochat-suggestion-title">{{ sug.title }}</span>
+                  @if (sug.description) { <span class="hvochat-suggestion-desc"> {{ sug.description }}</span> }
+                </span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BranchPicker -->
+<ng-template #branchPicker let-msg let-align="align">
+  <div class="hvochat-branch" [class.hvochat-branch--end]="align === 'end'">
+    <button type="button" tabindex="-1" class="hvochat-icon-btn" [title]="t('previous')" [attr.aria-label]="t('previous')"
+      [disabled]="!enabled() || busy() || (msg.branchNumber ?? 1) <= 1" (click)="branch(msg, -1, $event)">
+      <hvochat-internal-icon name="chevron-left"></hvochat-internal-icon>
+    </button>
+    <span class="hvochat-branch-state">{{ msg.branchNumber ?? 1 }} / {{ msg.branchCount }}</span>
+    <button type="button" tabindex="-1" class="hvochat-icon-btn" [title]="t('next')" [attr.aria-label]="t('next')"
+      [disabled]="!enabled() || busy() || (msg.branchNumber ?? 1) >= msg.branchCount" (click)="branch(msg, 1, $event)">
+      <hvochat-internal-icon name="chevron-right"></hvochat-internal-icon>
+    </button>
+  </div>
+</ng-template>

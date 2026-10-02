@@ -1,0 +1,42 @@
+<div class="hvochat-cc"
+  [class.hvochat-cc--fill]="fillHeight()"
+  [class.hvochat-cc--disabled]="!enabled()"
+  (mousedown)="onShellMouseDown($event)">
+  <textarea #textArea
+    class="hvochat-cc-input"
+    rows="1"
+    enterkeyhint="send"
+    [attr.id]="markupId() || null"
+    [sabloTabseq]="tabSeq()"
+    [value]="text()"
+    [attr.placeholder]="placeholder() || null"
+    [attr.aria-label]="placeholder() || sendLabel()"
+    [attr.maxlength]="maxLength() > 0 ? maxLength() : null"
+    [disabled]="!enabled()"
+    [readOnly]="readOnly()"
+    (input)="onInput()"
+    (keydown)="onKeyDown($event)"
+    (focus)="focused.emit($event)"
+    (blur)="blurred.emit($event)"></textarea>
+  @if (showSendButton() || busy()) {
+    <div class="hvochat-cc-actions">
+      @if (busy()) {
+        <button type="button" tabindex="-1"
+          class="hvochat-cc-btn hvochat-cc-cancel"
+          [title]="cancelLabel()" [attr.aria-label]="cancelLabel()"
+          [disabled]="!enabled()"
+          (click)="cancel($event)">
+          <hvochat-internal-icon name="square"></hvochat-internal-icon>
+        </button>
+      } @else {
+        <button type="button" tabindex="-1"
+          class="hvochat-cc-btn hvochat-cc-send"
+          [title]="sendLabel()" [attr.aria-label]="sendLabel()"
+          [disabled]="!canSend()"
+          (click)="submit($event)">
+          <hvochat-internal-icon name="arrow-up"></hvochat-internal-icon>
+        </button>
+      }
+    </div>
+  }
+</div>
