@@ -74,7 +74,11 @@
                   <div class="hvochat-md" [innerHTML]="msg.text | hvochatMarkdown: markdown()"></div>
                 } @else if (isRunning(msg, last) && !msg.reasoning) {
                   <!-- MessagePartInProgress -->
-                  <span class="hvochat-indicator" role="status" aria-label="…">●</span>
+                  <span class="hvochat-indicator hvochat-typing" role="status" aria-label="…">
+                    <span class="hvochat-typing-dot"></span>
+                    <span class="hvochat-typing-dot"></span>
+                    <span class="hvochat-typing-dot"></span>
+                  </span>
                 }
                 @if (msg.text && isRunning(msg, last)) {
                   <span class="hvochat-indicator hvochat-indicator--inline" aria-hidden="true">●</span>

@@ -182,6 +182,34 @@
     margin-left: 0.25rem;
 }
 
+/* --- Typing-Indicator (leere laufende Antwort): drei Punkte erscheinen nacheinander --- */
+.hvochat-typing {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2em;
+    /* Feste Hoehe, damit die Bubble beim Wechsel zu Text nicht springt */
+    height: 1.5em;
+    /* Der Container selbst pulsiert nicht - nur die Punkte werden animiert */
+    animation: none;
+    color: var(--hvochat-muted-foreground, currentColor);
+}
+
+/* Grundzustand ohne Animation: alle drei Punkte sichtbar. Wichtig fuer prefers-reduced-motion,
+   da dort "animation: none !important" greift und die Punkte sonst unsichtbar blieben. */
+.hvochat-typing-dot {
+    width: 0.4em;
+    height: 0.4em;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.6;
+}
+
+/* Zyklus 1,2 s: "." -> ".." -> "..." -> leer. Jeder Punkt hat eigene Keyframes mit versetztem Einsatz,
+   alle blenden gemeinsam bei ca. 88 % aus. Es wird nur opacity animiert, der Platzbedarf bleibt konstant. */
+.hvochat-typing-dot:nth-child(1) { animation: hvochat-typing-1 1.2s ease-in-out infinite; }
+.hvochat-typing-dot:nth-child(2) { animation: hvochat-typing-2 1.2s ease-in-out infinite; }
+.hvochat-typing-dot:nth-child(3) { animation: hvochat-typing-3 1.2s ease-in-out infinite; }
+
 /* --- Icon-Buttons (TooltipIconButton: ghost, size-6, p-1) --- */
 .hvochat-icon-btn {
     display: inline-flex;
@@ -687,6 +715,24 @@
 
 @keyframes hvochat-pulse {
     50% { opacity: 0.5; }
+}
+
+@keyframes hvochat-typing-1 {
+    0% { opacity: 0; }
+    4%, 84% { opacity: 0.6; }
+    90%, 100% { opacity: 0; }
+}
+
+@keyframes hvochat-typing-2 {
+    0%, 30% { opacity: 0; }
+    34%, 84% { opacity: 0.6; }
+    90%, 100% { opacity: 0; }
+}
+
+@keyframes hvochat-typing-3 {
+    0%, 63% { opacity: 0; }
+    67%, 84% { opacity: 0.6; }
+    90%, 100% { opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
