@@ -7,13 +7,14 @@
   "dist": "dist/hvo/chat",
   "moduleClass": "HvoChatModule",
   "display": "HVO Chat",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "category": "HVO",
   "license": "UNLICENSED",
   "source": "https://github.com/assistant-ui/assistant-ui (packages/react ComposerInput, packages/ui thread composer)",
   "items": [
     "composer",
-    "thread"
+    "thread",
+    "feedback"
   ],
   "env": {
     "ting": "2026.6.0",

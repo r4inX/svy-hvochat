@@ -145,12 +145,20 @@
     overflow-wrap: anywhere;
 }
 
+/* Aktionsleiste, Feedback-Daumen und weitere Aktionen nebeneinander; die Feedback-Kommentarbox
+   (hvochat-internal-feedback) bricht per flex-basis 100 % in eine eigene Zeile darunter um */
 .hvochat-assistant-footer {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
+    gap: 0.25rem;
     min-height: 1.875rem;
     margin-left: 0.5rem;
     padding-top: 0.375rem;
+}
+
+.hvochat-actionbar--rest {
+    margin-left: 0;
 }
 
 .hvochat-actionbar {

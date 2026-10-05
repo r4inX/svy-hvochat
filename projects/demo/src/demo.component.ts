@@ -1,6 +1,9 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, SimpleChange, ViewChild } from '@angular/core';
 import { JSEvent, ServoyApiTesting } from '@servoy/public';
-import { HvoChatMessage, HvoChatSuggestion, HvoChatThread } from '../../chat/src/public-api';
+import { HvoChatFeedback, HvoChatFeedbackValue, HvoChatMessage, HvoChatSuggestion, HvoChatThread } from '../../chat/src/public-api';
+
+// Verzoegerung, mit der der "Host" message.feedback setzt (simuliert den Server-Roundtrip)
+const cnFeedbackRoundtripMs = 400;
 
 /** ServoyApi-Attrappe mit umschaltbarem Layout-Modus */
 class DemoServoyApi extends ServoyApiTesting {
@@ -40,12 +43,19 @@ const cnChunkMs = 30;
 })
 export class DemoComponent {
     @ViewChild('thread') thread!: HvoChatThread;
+    @ViewChild('feedbackB') feedbackB!: HvoChatFeedback;
 
     readonly threadApi = new DemoServoyApi('thread1', true);
     readonly composerApi = new DemoServoyApi('composer1', false);
+    readonly feedbackApiA = new DemoServoyApi('feedbackA', false);
+    readonly feedbackApiB = new DemoServoyApi('feedbackB', false);
 
     messages: HvoChatMessage[] = [];
     busy = false;
+    /** Thread: Kommentarfeld bei Daumen runter (zum Testen der Rueckwaertskompatibilitaet umschaltbar) */
+    allowFeedbackComment = true;
+    /** "Dataprovider" von Feedback-Element B */
+    feedbackValueB: HvoChatFeedbackValue | null = null;
     log: string[] = [];
     readonly suggestions: HvoChatSuggestion[] = [
         { title: 'Wer zahlt die Fenster?', description: 'laut Teilungserklärung', prompt: 'Wer trägt die Kosten für die Fenster?' },
@@ -86,9 +96,35 @@ export class DemoComponent {
     readonly onFeedback = (pcId: string, pcFeedback: string): Promise<unknown> => {
         this.addLog(`onFeedback(${pcId}, ${pcFeedback})`);
         const loMsg = this.messages.find((loM) => loM.id === pcId);
-        if (loMsg) this.mutate(() => { loMsg.feedback = pcFeedback as 'positive' | 'negative'; });
+        // Wie der echte Host: feedback erst nach dem Server-Roundtrip setzen (testet die Doppelklick-Sperre)
+        if (loMsg) setTimeout(() => this.mutate(() => { loMsg.feedback = pcFeedback as 'positive' | 'negative'; }), cnFeedbackRoundtripMs);
         return Promise.resolve();
     };
+    readonly onFeedbackComment = (pcId: string, pcComment: string): Promise<unknown> => {
+        this.addLog(`onFeedbackComment(${pcId}, "${pcComment.replace(/\n/g, '\\n')}")`);
+        return Promise.resolve();
+    };
+    readonly onStandaloneFeedback = (pcContextId: string, pcFeedback: string): Promise<unknown> => {
+        this.addLog(`[feedback] onFeedback(${pcContextId || "''"}, ${pcFeedback})`);
+        return Promise.resolve();
+    };
+    readonly onStandaloneFeedbackComment = (pcContextId: string, pcComment: string): Promise<unknown> => {
+        this.addLog(`[feedback] onFeedbackComment(${pcContextId}, "${pcComment.replace(/\n/g, '\\n')}")`);
+        return Promise.resolve();
+    };
+
+    /** Fuegt eine "alte" Antwort ohne Bewertungsmoeglichkeit hinzu (message.feedbackDisabled) */
+    addOldMessage(): void {
+        this.mutate(() => this.messages.push({
+            id: this.id(), role: 'assistant', status: 'complete', feedbackDisabled: true,
+            text: 'Ältere Antwort **ohne request_id** – hier dürfen keine Daumen erscheinen.'
+        }));
+    }
+
+    /** Ruft die API reset() von Feedback-Element B auf */
+    resetFeedbackB(): void {
+        this.feedbackB.reset();
+    }
     readonly onBranchChange = (pcId: string, pnBranch: number): Promise<unknown> => {
         this.addLog(`onBranchChange(${pcId}, ${pnBranch})`);
         const loMsg = this.messages.find((loM) => loM.id === pcId);

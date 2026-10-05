@@ -1,6 +1,6 @@
 {
   "name": "hvochat",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "HVO Chat - Servoy Titanium Web-Package (Servoy 2026.6.0)",
   "scripts": {
     "ng": "ng",

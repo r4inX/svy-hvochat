@@ -2,9 +2,10 @@
 // ActionBar, ActionBarMore, BranchPicker, Suggestion, Error, ChainOfThought/Reasoning, Sources.
 // Optik: packages/ui/src/components/react/assistant-ui/elements/thread.aui.tsx, markdown-text.tsx,
 // reasoning.tsx, sources.tsx @ b6444661cf03cae6c5e10baba1e12c9e010b8ea0 - siehe THIRD_PARTY_NOTICES.md
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, Renderer2, SimpleChanges, input, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, Renderer2, SimpleChanges, computed, input, signal, viewChild } from '@angular/core';
 import { JSEvent, ServoyBaseComponent, ServoyPublicService } from '@servoy/public';
 import { HvoChatComposerCore, HvoChatSubmitEvent, HvoChatSubmitMode } from '../shared/composer-core/composer-core';
+import { HVOCHAT_FEEDBACK_DEFAULT_TEXTS, HvoChatFeedbackTexts } from '../shared/feedback/feedback-core';
 import { renderChatText } from '../shared/markdown/markdown.pipe';
 
 /** Quelle einer Antwort (RAG) - .spec-Typ "source" */
@@ -29,6 +30,8 @@ export interface HvoChatMessage {
     branchNumber?: number;
     branchCount?: number;
     feedback?: 'positive' | 'negative' | null;
+    /** true: keine Daumen/Kommentarbox fuer diese Nachricht (z. B. aeltere Nachrichten ohne Backend-request_id) */
+    feedbackDisabled?: boolean;
     createdAt?: Date;
 }
 
@@ -44,8 +47,13 @@ const coDefaultTexts = {
     copied: 'Kopiert',
     edit: 'Bearbeiten',
     reload: 'Neu generieren',
-    feedbackPositive: 'Hilfreich',
-    feedbackNegative: 'Nicht hilfreich',
+    feedbackPositive: HVOCHAT_FEEDBACK_DEFAULT_TEXTS.positive,
+    feedbackNegative: HVOCHAT_FEEDBACK_DEFAULT_TEXTS.negative,
+    feedbackCommentPlaceholder: HVOCHAT_FEEDBACK_DEFAULT_TEXTS.commentPlaceholder,
+    feedbackCommentSubmit: HVOCHAT_FEEDBACK_DEFAULT_TEXTS.commentSubmit,
+    feedbackCommentCancel: HVOCHAT_FEEDBACK_DEFAULT_TEXTS.commentCancel,
+    feedbackCommentHint: HVOCHAT_FEEDBACK_DEFAULT_TEXTS.commentHint,
+    feedbackCommentThanks: HVOCHAT_FEEDBACK_DEFAULT_TEXTS.commentThanks,
     speak: 'Vorlesen',
     stopSpeaking: 'Vorlesen beenden',
     more: 'Mehr',
@@ -70,6 +78,7 @@ const cnBottomThreshold = 24;
 // Dauer der "Kopiert"-Anzeige (ms)
 const cnCopiedResetMs = 2000;
 const cnDefaultMaxWidth = 704;
+const cnDefaultCommentMaxLength = 1000;
 
 /**
  * Chat Thread - komplette Chat-Ansicht (Servoy-Titanium-Komponente).
@@ -101,6 +110,10 @@ export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implement
     readonly allowEdit = input<boolean, boolean | undefined>(true, { transform: (pbValue) => pbValue ?? true });
     readonly allowReload = input<boolean, boolean | undefined>(true, { transform: (pbValue) => pbValue ?? true });
     readonly allowFeedback = input<boolean, boolean | undefined>(false, { transform: (pbValue) => !!pbValue });
+    readonly allowFeedbackComment = input<boolean, boolean | undefined>(false, { transform: (pbValue) => !!pbValue });
+    readonly feedbackCommentMaxLength = input<number, number | undefined>(cnDefaultCommentMaxLength, {
+        transform: (pnValue) => (pnValue && pnValue > 0 ? pnValue : cnDefaultCommentMaxLength)
+    });
     readonly allowSpeak = input<boolean, boolean | undefined>(false, { transform: (pbValue) => !!pbValue });
     readonly allowExportMarkdown = input<boolean, boolean | undefined>(true, { transform: (pbValue) => pbValue ?? true });
     readonly showBranchPicker = input<boolean, boolean | undefined>(true, { transform: (pbValue) => pbValue ?? true });
@@ -121,12 +134,28 @@ export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implement
     readonly onReload = input<(messageId: string, event: JSEvent) => Promise<unknown>>(undefined);
     readonly onEdit = input<(messageId: string, text: string, event: JSEvent) => Promise<unknown>>(undefined);
     readonly onFeedback = input<(messageId: string, feedback: string, event: JSEvent) => Promise<unknown>>(undefined);
+    readonly onFeedbackComment = input<(messageId: string, comment: string, event: JSEvent) => Promise<unknown>>(undefined);
     readonly onBranchChange = input<(messageId: string, branchNumber: number, event: JSEvent) => Promise<unknown>>(undefined);
     readonly onSourceClick = input<(messageId: string, sourceIndex: number, event: JSEvent) => Promise<unknown>>(undefined);
 
     readonly viewport = viewChild<ElementRef<HTMLDivElement>>('viewport');
     readonly composer = viewChild(HvoChatComposerCore);
     readonly editArea = viewChild<ElementRef<HTMLTextAreaElement>>('editArea');
+
+    /** Beschriftungen fuer den gemeinsamen Feedback-Baustein (aus texts bzw. deutschen Standardtexten) */
+    readonly feedbackTexts = computed<HvoChatFeedbackTexts>(() => {
+        this.texts();
+        return {
+            ...HVOCHAT_FEEDBACK_DEFAULT_TEXTS,
+            positive: this.t('feedbackPositive'),
+            negative: this.t('feedbackNegative'),
+            commentPlaceholder: this.t('feedbackCommentPlaceholder'),
+            commentSubmit: this.t('feedbackCommentSubmit'),
+            commentCancel: this.t('feedbackCommentCancel'),
+            commentHint: this.t('feedbackCommentHint'),
+            commentThanks: this.t('feedbackCommentThanks')
+        };
+    });
 
     // --- lokaler UI-Zustand ---
     readonly composerText = signal('');
@@ -362,13 +391,26 @@ export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implement
     }
 
     /**
-     * Feedback melden.
+     * Feedback melden (sofort bei jedem Daumenklick, unveraenderte Signatur). Doppelklick-Sperre und
+     * Kommentarbox steuert der gemeinsame Baustein hvochat-internal-feedback.
      * @param {HvoChatMessage} poMsg
      * @param {'positive'|'negative'} pcFeedback
      * @param {Event} poEvent
      */
     feedback(poMsg: HvoChatMessage, pcFeedback: 'positive' | 'negative', poEvent: Event): void {
+        if (poMsg.feedbackDisabled) return;
         this.onFeedback()?.(poMsg.id, pcFeedback, this.createEvent(poEvent, 'onFeedback'));
+    }
+
+    /**
+     * Kommentar zu "nicht hilfreich" melden. Der Kommentar wird nicht geloggt (kann personenbezogene Daten enthalten).
+     * @param {HvoChatMessage} poMsg
+     * @param {string} pcComment - getrimmt und auf feedbackCommentMaxLength gekuerzt
+     * @param {Event} poEvent
+     */
+    feedbackComment(poMsg: HvoChatMessage, pcComment: string, poEvent: Event): void {
+        if (poMsg.feedbackDisabled || !pcComment) return;
+        this.onFeedbackComment()?.(poMsg.id, pcComment, this.createEvent(poEvent, 'onFeedbackComment'));
     }
 
     /**

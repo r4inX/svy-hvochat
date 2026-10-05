@@ -1,0 +1,25 @@
+/* Absolute-Layout: fuellt die von Servoy vorgegebene Box; Responsive: waechst mit (z. B. bei offener Kommentarbox) */
+:host {
+    display: block;
+    width: 100%;
+}
+
+/* Label, Daumen und Danke-Text in einer Zeile; die Kommentarbox bricht in eine eigene Zeile um */
+.hvochat-feedback {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 1.75rem;
+    box-sizing: border-box;
+    color: var(--hvochat-foreground, inherit);
+    font-size: var(--hvochat-font-size, 0.875rem);
+    /* Kommentarbox volle Breite - nicht die Bubble-Breite des Threads (--hvochat-assistant-max-width) uebernehmen */
+    --hvochat-feedback-comment-max-width: 100%;
+}
+
+.hvochat-feedback-label {
+    color: var(--hvochat-muted-foreground, #737373);
+    font-size: 0.8125rem;
+}

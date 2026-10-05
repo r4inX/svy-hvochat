@@ -10,6 +10,7 @@ Servoy-Titanium-Component-Package `@hvo/chat` (Bundle `hvochat`). Es enthält Ch
 |---|---|---|
 | `hvochat-thread` | `HvoChatThread` | Komplette Chat-Ansicht, siehe unten |
 | `hvochat-composer` | `HvoChatComposer` | Eigenständiges Eingabefeld, z. B. für eigene Layouts |
+| `hvochat-feedback` | `HvoChatFeedback` | Eigenständige Bewertung (👍/👎, optional mit Kommentar) für Stellen ohne Chat-Thread, siehe [Feedback](#feedback) |
 
 `hvochat-thread` enthält:
 - Verlauf mit Markdown, Bildern, Quellen und Denkprozess
@@ -83,8 +84,33 @@ Weitere Handler (alle optional; ohne Handler wird der zugehörige Button ausgebl
 | `onReload` | `messageId`, `event` |
 | `onEdit` | `messageId`, `text`, `event` |
 | `onFeedback` | `messageId`, `'positive'`/`'negative'`, `event` |
+| `onFeedbackComment` | `messageId`, `comment`, `event` (nur mit `allowFeedbackComment`) |
 | `onBranchChange` | `messageId`, `branchNumber`, `event` |
 | `onSourceClick` | `messageId`, `sourceIndex`, `event` (ohne Handler wird `source.url` geöffnet) |
+
+## Feedback
+
+Thread und `hvochat-feedback` nutzen denselben internen Baustein, Aussehen und Verhalten sind also identisch.
+
+**Ablauf bei 👎 mit Kommentar** (`allowFeedbackComment` im Thread bzw. `allowComment` im Element):
+1. `onFeedback(id, 'negative', event)` wird **sofort** gemeldet, die Bewertung also gleich ans Backend senden.
+2. Unter der Antwort öffnet sich eine Kommentarbox mit Zähler und Hinweis auf die Protokollierung. **Strg+Enter** sendet, **Escape** schließt.
+3. Nach dem Senden kommt `onFeedbackComment(id, kommentar, event)` mit getrimmtem Text, höchstens `feedbackCommentMaxLength` bzw. `commentMaxLength` Zeichen. Danach erscheint „Danke für Ihr Feedback“. Fürs Backend die Bewertung `down` **zusammen mit dem Kommentar** erneut senden, weil eine neue Bewertung die alte ersetzt.
+4. Ein erneuter Klick auf ein bereits gewähltes 👎 löst nichts aus. 👍 schließt und leert eine offene Kommentarbox.
+
+Ohne `allowFeedbackComment` bzw. `allowComment` verhält sich alles wie in Version 1.0.2: Jeder Klick meldet `onFeedback`. Kommentare werden nie geloggt, weil sie personenbezogene Daten enthalten können.
+
+**Thread:** `message.feedbackDisabled = true` blendet Daumen und Kommentar für einzelne Nachrichten aus, z. B. für ältere Nachrichten ohne `request_id`. Die Anzeige des gewählten Daumens steuert weiterhin der Host über `message.feedback`.
+
+**`hvochat-feedback`:**
+
+| | |
+|---|---|
+| Model | `dataProviderID` (optional, `'positive'`/`'negative'`/`null`, wird sofort lokal angezeigt), `contextId` (z. B. `request_id`, kommt in jedem Handler mit), `label`, `allowComment`, `commentMaxLength`, `texts`, `enabled`, `styleClass`, `tabSeq` |
+| Handler | `onFeedback(contextId, feedback, event)`, `onFeedbackComment(contextId, comment, event)` |
+| API | `reset()` (Bewertung inkl. Dataprovider, Kommentarbox und Danke-Text zurücksetzen), `requestFocus()` |
+
+In `plugins.dialogs`-Messageboxen lassen sich keine Elemente einbauen. Für „Antwort plus Feedback“ eine kleine eigene Form mit Text-Label und `hvochat-feedback` verwenden und als Popup oder Fenster öffnen. Im Absolute-Layout muss das Element bei `allowComment` hoch genug sein (ca. 200 px).
 
 **Theming:** Über `styleClass` und CSS-Variablen in der Solution-CSS, z. B.:
 ```css

@@ -7,4 +7,5 @@ zip.addLocalFolder('./META-INF/', '/META-INF/');
 zip.addLocalFolder('./dist/hvo/chat/', '/dist/hvo/chat/');
 zip.addLocalFolder('./composer/', '/composer/');
 zip.addLocalFolder('./thread/', '/thread/');
+zip.addLocalFolder('./feedback/', '/feedback/');
 zip.writeZip('hvochat.zip');

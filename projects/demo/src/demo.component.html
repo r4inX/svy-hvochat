@@ -1,19 +1,46 @@
-<div style="display:grid; grid-template-columns: 1fr 320px; gap: 24px; padding: 24px; font-family: system-ui, sans-serif;">
+<div style="display:grid; grid-template-columns: 1fr 360px; gap: 24px; padding: 24px; font-family: system-ui, sans-serif;">
   <div>
     <h3 style="margin:0 0 8px">hvochat-thread (Absolute-Layout, 640px hoch)</h3>
+    <div style="display:flex; gap:16px; align-items:center; margin-bottom:8px; font-size:13px;">
+      <label><input type="checkbox" id="toggleComment" [checked]="allowFeedbackComment"
+        (change)="allowFeedbackComment = $any($event.target).checked"> allowFeedbackComment</label>
+      <button type="button" id="addOld" (click)="addOldMessage()">Alte Antwort (feedbackDisabled) hinzufügen</button>
+    </div>
     <div class="demo-hvo-theme" style="height: 640px; border: 1px dashed #bbb;">
       <hvochat-thread #thread
         [servoyApi]="threadApi" name="thread1"
         [messages]="messages" [busy]="busy" [suggestions]="suggestions"
-        [allowFeedback]="true" [allowSpeak]="true"
+        [allowFeedback]="true" [allowFeedbackComment]="allowFeedbackComment" [allowSpeak]="true"
         [onSubmit]="onSubmit" [onCancel]="onCancel" [onReload]="onReload" [onEdit]="onEdit"
-        [onFeedback]="onFeedback" [onBranchChange]="onBranchChange" [onSourceClick]="onSourceClick">
+        [onFeedback]="onFeedback" [onFeedbackComment]="onFeedbackComment"
+        [onBranchChange]="onBranchChange" [onSourceClick]="onSourceClick">
       </hvochat-thread>
     </div>
   </div>
   <div>
     <h3 style="margin:0 0 8px">hvochat-composer (Responsive)</h3>
     <hvochat-composer [servoyApi]="composerApi" name="composer1" [onSubmit]="onComposerSubmit" [maxHeight]="120"></hvochat-composer>
+
+    <h3 style="margin:24px 0 8px">hvochat-feedback A (Label, Kommentar, contextId)</h3>
+    <div class="demo-hvo-theme" id="feedbackA" style="padding:8px; border:1px dashed #bbb;">
+      <hvochat-feedback [servoyApi]="feedbackApiA" name="feedbackA"
+        contextId="req-4711" label="War diese Antwort hilfreich?" [allowComment]="true"
+        [onFeedback]="onStandaloneFeedback" [onFeedbackComment]="onStandaloneFeedbackComment">
+      </hvochat-feedback>
+    </div>
+
+    <h3 style="margin:24px 0 8px">hvochat-feedback B (Dataprovider, ohne Kommentar)</h3>
+    <div class="demo-hvo-theme" id="feedbackB" style="padding:8px; border:1px dashed #bbb;">
+      <hvochat-feedback #feedbackB [servoyApi]="feedbackApiB" name="feedbackB"
+        [dataProviderID]="feedbackValueB" (dataProviderIDChange)="feedbackValueB = $event"
+        [onFeedback]="onStandaloneFeedback">
+      </hvochat-feedback>
+      <div style="margin-top:6px; font-size:12px;">
+        Dataprovider: <code id="dpB">{{ feedbackValueB ?? 'null' }}</code>
+        <button type="button" id="resetB" style="margin-left:8px" (click)="resetFeedbackB()">reset()</button>
+      </div>
+    </div>
+
     <h3 style="margin:24px 0 8px">Handler-Log</h3>
     <div id="log" style="font: 12px ui-monospace, monospace; background:#f6f6f6; padding:8px; min-height:200px;">
       @for (l of log; track $index) { <div>{{ l }}</div> }

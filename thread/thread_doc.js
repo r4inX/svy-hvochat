@@ -70,8 +70,21 @@ var allowReload;
 
 /**
  * Daumen hoch/runter anzeigen (benoetigt onFeedback).
+ * Einzelne Nachrichten lassen sich mit message.feedbackDisabled = true davon ausnehmen.
  */
 var allowFeedback;
+
+/**
+ * Bei Daumen runter zusaetzlich ein optionales Kommentarfeld anbieten (benoetigt onFeedbackComment).
+ * onFeedback(messageId, 'negative') wird trotzdem sofort gemeldet; der Kommentar kommt ggf. danach.
+ * Standard: false (bisheriges Verhalten).
+ */
+var allowFeedbackComment;
+
+/**
+ * Maximale Laenge des Feedback-Kommentars (Standard 1000).
+ */
+var feedbackCommentMaxLength;
 
 /**
  * Vorlesen ueber die Sprachausgabe des Browsers.
@@ -176,13 +189,26 @@ var handlers = {
     onEdit: function() {},
 
     /**
-     * Bewertung einer Antwort. Zur Anzeige message.feedback setzen.
+     * Bewertung einer Antwort, sofort bei jedem Daumenklick. Zur Anzeige message.feedback setzen.
+     * Mit allowFeedbackComment loest ein erneuter Klick auf ein bereits gewaehltes 'negative' nichts aus.
      *
      * @param {String} messageId ID der Antwort
      * @param {String} feedback 'positive' oder 'negative'
      * @param {JSEvent} event Das ausloesende Event
      */
     onFeedback: function() {},
+
+    /**
+     * Kommentar zu Daumen runter abgeschickt (nur bei allowFeedbackComment).
+     * onFeedback(messageId, 'negative') wurde vorher bereits gemeldet. Fuer das Backend die Bewertung
+     * 'down' zusammen mit dem Kommentar erneut senden (ersetzt die vorige Bewertung).
+     * Der Kommentar kann personenbezogene Daten enthalten - nicht loggen.
+     *
+     * @param {String} messageId ID der Antwort
+     * @param {String} comment Der Kommentar (getrimmt, hoechstens feedbackCommentMaxLength Zeichen)
+     * @param {JSEvent} event Das ausloesende Event
+     */
+    onFeedbackComment: function() {},
 
     /**
      * Wechsel zu einer anderen Version einer Nachricht.
@@ -343,6 +369,8 @@ var svy_types = {
         branchCount: null,
         /** 'positive', 'negative' oder null */
         feedback: null,
+        /** true: keine Daumen/Kommentarbox fuer diese Nachricht (z. B. aeltere Nachrichten ohne request_id) */
+        feedbackDisabled: null,
         /** Zeitstempel */
         createdAt: null
     },
@@ -378,6 +406,9 @@ var svy_types = {
     threadTexts: {
         copy: null, copied: null, edit: null, reload: null, feedbackPositive: null, feedbackNegative: null,
         speak: null, stopSpeaking: null, more: null, exportMarkdown: null, previous: null, next: null,
-        scrollToBottom: null, editCancel: null, editSave: null, sources: null, reasoning: null, send: null, cancel: null
+        scrollToBottom: null, editCancel: null, editSave: null, sources: null, reasoning: null, send: null, cancel: null,
+        /** Feedback-Kommentar: Platzhalter, Senden, Abbrechen, Hinweis (Protokollierung), Bestaetigung */
+        feedbackCommentPlaceholder: null, feedbackCommentSubmit: null, feedbackCommentCancel: null,
+        feedbackCommentHint: null, feedbackCommentThanks: null
     }
 };

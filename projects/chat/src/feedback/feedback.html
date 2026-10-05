@@ -1,0 +1,16 @@
+<div class="hvochat-feedback" [class]="styleClass()" [id]="servoyApi.getMarkupId()" #element>
+  @if (label()) {
+    <span class="hvochat-feedback-label">{{ label() }}</span>
+  }
+  <hvochat-internal-feedback
+    [feedback]="value()"
+    [commentEnabled]="allowComment() && !!onFeedbackComment()"
+    [maxLength]="commentMaxLength()"
+    [enabled]="enabled()"
+    [texts]="resolvedTexts()"
+    [focusable]="true"
+    [tabSeq]="tabSeq()"
+    (feedbackClick)="onThumb($event.feedback, $event.event)"
+    (commentSubmit)="onComment($event.comment, $event.event)">
+  </hvochat-internal-feedback>
+</div>

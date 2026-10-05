@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Bundle-Name: HVO Chat
 Bundle-SymbolicName: hvochat
-Bundle-Version: 1.0.2
+Bundle-Version: 1.0.3
 Package-Type: Web-Component
 NPM-PackageName: @hvo/chat
 NG2-Module: HvoChatModule
@@ -12,5 +12,8 @@ Name: composer/composer.spec
 Web-Component: True
 
 Name: thread/thread.spec
+Web-Component: True
+
+Name: feedback/feedback.spec
 Web-Component: True
 

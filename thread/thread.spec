@@ -24,6 +24,8 @@
 		"allowEdit": { "type": "boolean", "default": true, "tags": { "doc": "Benutzer-Nachrichten bearbeiten (onEdit)" } },
 		"allowReload": { "type": "boolean", "default": true, "tags": { "doc": "Antwort neu erzeugen (onReload)" } },
 		"allowFeedback": { "type": "boolean", "default": false, "tags": { "doc": "Daumen hoch/runter (onFeedback)" } },
+		"allowFeedbackComment": { "type": "boolean", "default": false, "tags": { "doc": "Bei Daumen runter zusaetzlich ein optionales Kommentarfeld anbieten (onFeedbackComment)" } },
+		"feedbackCommentMaxLength": { "type": "int", "default": 1000, "tags": { "doc": "Maximale Laenge des Feedback-Kommentars" } },
 		"allowSpeak": { "type": "boolean", "default": false, "tags": { "doc": "Antwort vorlesen (Browser-Sprachausgabe)" } },
 		"allowExportMarkdown": { "type": "boolean", "default": true, "tags": { "doc": "Antwort als .md herunterladen" } },
 		"showBranchPicker": { "type": "boolean", "default": true, "tags": { "doc": "Versionswechsler bei message.branchCount > 1 (onBranchChange)" } },
@@ -33,7 +35,7 @@
 		"autoScroll": { "type": "boolean", "default": true, "tags": { "doc": "Bei neuen Inhalten nach unten scrollen, solange der Benutzer unten ist" } },
 		"maxContentWidth": { "type": "int", "default": 704, "tags": { "scope": "design", "doc": "Maximale Breite des Inhalts in px, 0 = volle Breite" } },
 		"texts": { "type": "threadTexts", "tags": { "doc": "Beschriftungen/Tooltips ueberschreiben (Standard: Deutsch)" } },
-		"enabled": { "type": "enabled", "blockingOn": false, "default": true, "for": ["onSubmit", "onCancel", "onReload", "onEdit", "onFeedback", "onBranchChange", "onSourceClick"] },
+		"enabled": { "type": "enabled", "blockingOn": false, "default": true, "for": ["onSubmit", "onCancel", "onReload", "onEdit", "onFeedback", "onFeedbackComment", "onBranchChange", "onSourceClick"] },
 		"styleClass": { "type": "styleclass", "tags": { "scope": "design" } },
 		"tabSeq": { "type": "tabseq", "tags": { "scope": "design" } },
 		"size": { "type": "dimension", "default": { "width": 640, "height": 520 } },
@@ -65,6 +67,10 @@
 		"onFeedback": {
 			"parameters": [ { "name": "messageId", "type": "string" }, { "name": "feedback", "type": "string", "doc": "positive | negative" }, { "name": "event", "type": "JSEvent" } ],
 			"doc": "Bewertung einer Antwort. Zur Anzeige message.feedback setzen."
+		},
+		"onFeedbackComment": {
+			"parameters": [ { "name": "messageId", "type": "string" }, { "name": "comment", "type": "string", "doc": "getrimmt, hoechstens feedbackCommentMaxLength Zeichen" }, { "name": "event", "type": "JSEvent" } ],
+			"doc": "Kommentar zu Daumen runter abgeschickt (nur bei allowFeedbackComment). onFeedback(messageId, 'negative') wurde vorher bereits gemeldet."
 		},
 		"onBranchChange": {
 			"parameters": [ { "name": "messageId", "type": "string" }, { "name": "branchNumber", "type": "int", "doc": "gewuenschte Version (1-basiert)" }, { "name": "event", "type": "JSEvent" } ],
@@ -105,6 +111,7 @@
 			"branchNumber": "int",
 			"branchCount": "int",
 			"feedback": { "type": "string", "values": ["positive", "negative"] },
+			"feedbackDisabled": "boolean",
 			"createdAt": "date"
 		},
 		"source": {
@@ -126,6 +133,11 @@
 			"reload": "tagstring",
 			"feedbackPositive": "tagstring",
 			"feedbackNegative": "tagstring",
+			"feedbackCommentPlaceholder": "tagstring",
+			"feedbackCommentSubmit": "tagstring",
+			"feedbackCommentCancel": "tagstring",
+			"feedbackCommentHint": "tagstring",
+			"feedbackCommentThanks": "tagstring",
 			"speak": "tagstring",
 			"stopSpeaking": "tagstring",
 			"more": "tagstring",

@@ -131,30 +131,29 @@
                   @if (showBranchPicker() && (msg.branchCount ?? 1) > 1) {
                     <ng-container *ngTemplateOutlet="branchPicker; context: { $implicit: msg, align: 'start' }"></ng-container>
                   }
-                  <div class="hvochat-actionbar" [class.hvochat-actionbar--autohide]="!last">
-                    @if (allowCopy()) {
+                  @if (allowCopy()) {
+                    <div class="hvochat-actionbar" [class.hvochat-actionbar--autohide]="!last">
                       <button type="button" tabindex="-1" class="hvochat-icon-btn"
                         [title]="copiedId() === msg.id ? t('copied') : t('copy')" [attr.aria-label]="t('copy')"
                         (click)="copy(msg)">
                         <hvochat-internal-icon [name]="copiedId() === msg.id ? 'check' : 'copy'"></hvochat-internal-icon>
                       </button>
-                    }
-                    @if (allowFeedback() && onFeedback()) {
-                      <button type="button" tabindex="-1" class="hvochat-icon-btn"
-                        [class.hvochat-icon-btn--active]="msg.feedback === 'positive'"
-                        [title]="t('feedbackPositive')" [attr.aria-label]="t('feedbackPositive')"
-                        [attr.aria-pressed]="msg.feedback === 'positive'"
-                        [disabled]="!enabled()" (click)="feedback(msg, 'positive', $event)">
-                        <hvochat-internal-icon name="thumbs-up"></hvochat-internal-icon>
-                      </button>
-                      <button type="button" tabindex="-1" class="hvochat-icon-btn"
-                        [class.hvochat-icon-btn--active]="msg.feedback === 'negative'"
-                        [title]="t('feedbackNegative')" [attr.aria-label]="t('feedbackNegative')"
-                        [attr.aria-pressed]="msg.feedback === 'negative'"
-                        [disabled]="!enabled()" (click)="feedback(msg, 'negative', $event)">
-                        <hvochat-internal-icon name="thumbs-down"></hvochat-internal-icon>
-                      </button>
-                    }
+                    </div>
+                  }
+                  <!-- ActionBarFeedbackPositive / -Negative (+ optionaler Kommentar) - gemeinsamer Baustein mit hvochat-feedback -->
+                  @if (allowFeedback() && onFeedback() && !msg.feedbackDisabled) {
+                    <hvochat-internal-feedback
+                      [feedback]="msg.feedback"
+                      [commentEnabled]="allowFeedbackComment() && !!onFeedbackComment()"
+                      [maxLength]="feedbackCommentMaxLength()"
+                      [enabled]="enabled()"
+                      [texts]="feedbackTexts()"
+                      [autohide]="!last"
+                      (feedbackClick)="feedback(msg, $event.feedback, $event.event)"
+                      (commentSubmit)="feedbackComment(msg, $event.comment, $event.event)">
+                    </hvochat-internal-feedback>
+                  }
+                  <div class="hvochat-actionbar hvochat-actionbar--rest" [class.hvochat-actionbar--autohide]="!last">
                     @if (allowSpeak()) {
                       <button type="button" tabindex="-1" class="hvochat-icon-btn"
                         [class.hvochat-icon-btn--active]="speakingId() === msg.id"

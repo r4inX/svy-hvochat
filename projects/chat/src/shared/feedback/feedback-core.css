@@ -1,0 +1,181 @@
+/* Feedback-Baustein - Optik wie die Aktionsbuttons im Thread (TooltipIconButton: ghost, size-6, p-1).
+   Farben nur ueber --hvochat-*-Variablen mit Fallback lesen (Light/Dark kommt aus der Solution). */
+
+/* Host erzeugt keine eigene Box: Daumen und Kommentarbox werden Flex-Kinder des Containers */
+:host {
+    display: contents;
+}
+
+.hvochat-fb-thumbs {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--hvochat-muted-foreground, #737373);
+}
+
+/* Im Thread: aeltere Nachrichten blenden die Daumen wie die Aktionsleiste aus, solange nicht gehovert */
+:host-context(.hvochat-assistant:not(:hover)) .hvochat-fb-thumbs--autohide:not(:focus-within) {
+    visibility: hidden;
+}
+
+.hvochat-fb-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0.25rem;
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--hvochat-muted-foreground, #737373);
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.hvochat-fb-btn:hover:not(:disabled) {
+    background: var(--hvochat-accent, #f5f5f5);
+    color: var(--hvochat-foreground, #0a0a0a);
+}
+
+.hvochat-fb-btn:active:not(:disabled) {
+    transform: scale(0.9);
+}
+
+.hvochat-fb-btn:focus-visible {
+    outline: 2px solid var(--hvochat-border-focus, rgba(23, 23, 23, 0.25));
+    outline-offset: 1px;
+}
+
+.hvochat-fb-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.hvochat-fb-btn--active {
+    background: var(--hvochat-accent, #f5f5f5);
+    color: var(--hvochat-foreground, #0a0a0a);
+}
+
+.hvochat-fb-thanks {
+    margin-left: 0.25rem;
+    color: var(--hvochat-muted-foreground, #737373);
+    font-size: 0.75rem;
+    animation: hvochat-fb-fade-in 0.2s ease-out both;
+}
+
+/* --- Kommentarbox: eigene Zeile unter den Daumen --- */
+.hvochat-fb-comment {
+    display: flex;
+    flex: 1 0 100%;
+    flex-direction: column;
+    gap: 0.375rem;
+    order: 99;
+    box-sizing: border-box;
+    max-width: var(--hvochat-feedback-comment-max-width, var(--hvochat-assistant-max-width, 100%));
+    margin-top: 0.375rem;
+    padding: 0.5rem;
+    border: 1px solid var(--hvochat-border, rgba(23, 23, 23, 0.1));
+    border-radius: var(--hvochat-feedback-comment-radius, 0.75rem);
+    background: var(--hvochat-composer-bg, rgba(245, 245, 245, 0.3));
+    transition: border-color 0.15s ease;
+    animation: hvochat-fb-fade-in 0.15s ease-out both;
+}
+
+.hvochat-fb-comment:focus-within {
+    border-color: var(--hvochat-border-focus, rgba(23, 23, 23, 0.25));
+}
+
+.hvochat-fb-comment-input {
+    width: 100%;
+    min-height: 4.5rem;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0.25rem 0.375rem;
+    border: 0;
+    outline: none;
+    resize: vertical;
+    background: transparent;
+    color: var(--hvochat-foreground, inherit);
+    font: inherit;
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+}
+
+.hvochat-fb-comment-input::placeholder {
+    color: var(--hvochat-placeholder, rgba(115, 115, 115, 0.6));
+    opacity: 1;
+}
+
+.hvochat-fb-comment-footer {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0 0.375rem;
+    color: var(--hvochat-muted-foreground, #737373);
+    font-size: 0.75rem;
+    line-height: 1rem;
+}
+
+.hvochat-fb-comment-counter {
+    flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
+}
+
+.hvochat-fb-comment-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.375rem;
+}
+
+.hvochat-fb-text-btn {
+    height: 1.875rem;
+    padding: 0 0.75rem;
+    border: 0;
+    border-radius: 0.375rem;
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.hvochat-fb-text-btn:focus-visible {
+    outline: 2px solid var(--hvochat-border-focus, rgba(23, 23, 23, 0.25));
+    outline-offset: 1px;
+}
+
+.hvochat-fb-text-btn--ghost {
+    background: transparent;
+    color: var(--hvochat-foreground, inherit);
+}
+
+.hvochat-fb-text-btn--ghost:hover {
+    background: var(--hvochat-accent, #f5f5f5);
+}
+
+.hvochat-fb-text-btn--primary {
+    background: var(--hvochat-primary, #171717);
+    color: var(--hvochat-primary-foreground, #fafafa);
+}
+
+.hvochat-fb-text-btn--primary:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+.hvochat-fb-text-btn--primary:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+@keyframes hvochat-fb-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hvochat-fb-thanks,
+    .hvochat-fb-comment {
+        animation: none;
+    }
+}
