@@ -253,6 +253,7 @@ Services (`plugins.xyz`) brauchen ein **eigenes** Package, weil ein Package gena
 
 | Version | Änderungen |
 | --- | --- |
+| 1.0.4 | Thread: „Antwort wird erzeugt“-Indikator als animierte Drei-Punkte-Anzeige (Typing Indicator) statt eines pulsierenden Punkts. Ohne Animation (`prefers-reduced-motion`) bleiben alle drei Punkte sichtbar. |
 | 1.0.3 | Thread: optionales Kommentarfeld bei 👎 (`allowFeedbackComment`, `feedbackCommentMaxLength`, `onFeedbackComment`) und `message.feedbackDisabled`. Neues Element `hvochat-feedback`. Gemeinsamer Feedback-Baustein. Neues Werkzeug `npm run set-version`. |
 | 1.0.2 | Antwort-Bubble über CSS-Variablen (`--hvochat-assistant-*`, `--hvochat-inset-bg`, `--hvochat-source-bg`) |
 | 1.0.1 | Composer schreibt den Dataprovider vor `onSubmit`. Elemente füllen im Responsive-Layout den Flex-Container. Benutzer-Bubble über Variablen themebar. |
