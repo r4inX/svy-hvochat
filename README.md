@@ -2,13 +2,15 @@
 
 Servoy-Titanium-Web-Package mit Chat-Komponenten, portiert aus [assistant-ui](https://github.com/assistant-ui/assistant-ui) nach Angular.
 
+> Inoffizieller Port, nicht mit dem assistant-ui-Projekt oder dessen Betreibern verbunden. Servoy ist eine Marke der Servoy B.V.
+
 | | |
 | --- | --- |
 | **Bundle** | `hvochat` (Package-Typ Web-Component) |
 | **Version** | siehe [Versionshistorie](#versionshistorie) bzw. `META-INF/MANIFEST.MF` |
 | **Zielversion** | Servoy 2026.3 – 2026.6, Angular 21, `@servoy/public` 2026.3.0 |
-| **Erzeugt mit** | Claude-Skill [`convert-to-servoy-comp`](../svy-assistant-ui) |
-| **Lizenzen** | [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) (assistant-ui MIT, Lucide ISC, marked MIT, DOMPurify MPL-2.0/Apache-2.0) |
+| **Erzeugt mit** | Claude-Skill `convert-to-servoy-comp` |
+| **Lizenz** | [MIT](LICENSE), Drittanbieter-Lizenzen siehe [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) (assistant-ui MIT, Lucide ISC, marked MIT, DOMPurify MPL-2.0/Apache-2.0) |
 
 ## Inhalt
 
@@ -190,7 +192,7 @@ Ohne die Bubble-Variablen erscheinen Antworten wie bei assistant-ui als Fließte
 **Voraussetzungen:** Node.js 20.19+ oder 22.12+, npm, Git. Optional Servoy Developer 2026.3 – 2026.6 für den Test im Client.
 
 ```bash
-git clone <repo-url> svy-hvochat
+git clone https://github.com/r4inX/svy-hvochat.git
 cd svy-hvochat
 npm install                    # nur im Package-Root, nie in projects/chat
 ```

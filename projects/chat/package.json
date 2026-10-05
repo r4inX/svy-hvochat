@@ -12,5 +12,5 @@
     "marked": "^18.0.0",
     "tslib": "*"
   },
-  "license": "UNLICENSED"
+  "license": "MIT"
 }
