@@ -1,6 +1,6 @@
 {
   "name": "hvochat",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "HVO Chat - Servoy Titanium Web-Package (Servoy 2026.6.0)",
   "license": "MIT",
   "repository": { "type": "git", "url": "git+https://github.com/r4inX/svy-hvochat.git" },

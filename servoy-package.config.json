@@ -7,7 +7,7 @@
   "dist": "dist/hvo/chat",
   "moduleClass": "HvoChatModule",
   "display": "HVO Chat",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "category": "HVO",
   "license": "MIT",
   "source": "https://github.com/assistant-ui/assistant-ui (packages/react ComposerInput, packages/ui thread composer)",
