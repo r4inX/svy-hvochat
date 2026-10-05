@@ -9,6 +9,7 @@
     "build_debug_nowatch": "ng build @hvo/chat --watch=false",
     "make_release": "ng build @hvo/chat --configuration production && node scripts/build.js",
     "validate": "node scripts/validate-package.mjs .",
+    "set-version": "node scripts/set-version.mjs",
     "demo": "ng serve demo"
   },
   "private": true,

@@ -1,6 +1,23 @@
+# Abhaengigkeiten und Build-Ausgaben (werden per npm install / npm run build erzeugt)
 /node_modules/
 /dist/
 /out-tsc/
 /.angular/
 /coverage/
+
+# Release-Zip (npm run make_release) - nicht versionieren, jederzeit neu erzeugbar
 /*.zip
+
+# Logs
+*.log
+npm-debug.log*
+
+# Betriebssystem
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editoren / IDE (Eclipse-Dateien .project, .sourcepath und .settings/ werden fuer Servoy gebraucht und bleiben versioniert)
+.vscode/
+.idea/
+*.swp
