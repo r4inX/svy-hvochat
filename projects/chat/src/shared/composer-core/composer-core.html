@@ -2,6 +2,22 @@
   [class.hvochat-cc--fill]="fillHeight()"
   [class.hvochat-cc--disabled]="!enabled()"
   (mousedown)="onShellMouseDown($event)">
+  @if (pendingAttachments()?.length) {
+    <div class="hvochat-cc-pending">
+      @for (att of pendingAttachments(); track $index; let i = $index) {
+        <span class="hvochat-cc-chip">
+          <hvochat-internal-icon name="paperclip"></hvochat-internal-icon>
+          <span class="hvochat-cc-chip-name">{{ att.name }}</span>
+          @if (att.size) { <span class="hvochat-cc-chip-size">{{ att.size }}</span> }
+          <button type="button" tabindex="-1" class="hvochat-cc-chip-remove"
+            [title]="removeLabel()" [attr.aria-label]="removeLabel()"
+            [disabled]="!editable()" (click)="removePending(i, $event)">
+            <hvochat-internal-icon name="x"></hvochat-internal-icon>
+          </button>
+        </span>
+      }
+    </div>
+  }
   <textarea #textArea
     class="hvochat-cc-input"
     rows="1"
@@ -18,8 +34,26 @@
     (keydown)="onKeyDown($event)"
     (focus)="focused.emit($event)"
     (blur)="blurred.emit($event)"></textarea>
-  @if (showSendButton() || busy()) {
+  @if (showSendButton() || busy() || allowAttach() || allowMail()) {
     <div class="hvochat-cc-actions">
+      @if (allowMail()) {
+        <button type="button" tabindex="-1"
+          class="hvochat-cc-btn hvochat-cc-attach hvochat-cc-mail"
+          [title]="mailLabel()" [attr.aria-label]="mailLabel()"
+          [disabled]="!editable()"
+          (click)="mail($event)">
+          <hvochat-internal-icon name="mail"></hvochat-internal-icon>
+        </button>
+      }
+      @if (allowAttach()) {
+        <button type="button" tabindex="-1"
+          class="hvochat-cc-btn hvochat-cc-attach"
+          [title]="attachLabel()" [attr.aria-label]="attachLabel()"
+          [disabled]="!editable()"
+          (click)="attach($event)">
+          <hvochat-internal-icon name="paperclip"></hvochat-internal-icon>
+        </button>
+      }
       @if (busy()) {
         <button type="button" tabindex="-1"
           class="hvochat-cc-btn hvochat-cc-cancel"
