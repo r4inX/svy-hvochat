@@ -116,3 +116,58 @@
     width: 0.875rem;
     height: 0.875rem;
 }
+
+/* Vorgemerkte Anhaenge ueber dem Eingabefeld */
+.hvochat-cc-pending {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    padding: 0 0.25rem;
+}
+
+.hvochat-cc-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    max-width: 100%;
+    padding: 0.125rem 0.25rem 0.125rem 0.5rem;
+    border: 1px solid var(--hvochat-border, rgba(23, 23, 23, 0.1));
+    border-radius: 999px;
+    background: var(--hvochat-chip-bg, rgba(115, 115, 115, 0.08));
+    font-size: 0.8125rem;
+    cursor: default;
+}
+
+.hvochat-cc-chip-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hvochat-cc-chip-size {
+    color: var(--hvochat-muted-foreground, rgba(115, 115, 115, 1));
+    white-space: nowrap;
+}
+
+.hvochat-cc-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+
+.hvochat-cc-chip-remove:hover:not(:disabled) {
+    background: rgba(115, 115, 115, 0.2);
+}
+
+.hvochat-cc-attach {
+    background: transparent;
+    color: var(--hvochat-muted-foreground, rgba(115, 115, 115, 1));
+}

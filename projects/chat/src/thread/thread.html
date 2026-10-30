@@ -1,16 +1,105 @@
 <div class="hvochat-thread" [class]="styleClass()" [id]="servoyApi.getMarkupId()" #element>
+  <div class="hvochat-thread-body">
   <div class="hvochat-thread-viewport" #viewport (scroll)="onViewportScroll()">
-    <div class="hvochat-thread-inner" [class.hvochat-thread-inner--empty]="isEmpty()" [style.max-width]="contentWidth()">
+    <div class="hvochat-thread-inner" [class.hvochat-thread-inner--empty]="isEmpty() && !isRichEmpty()" [class.hvochat-thread-inner--rich-empty]="isRichEmpty()" [style.max-width]="contentWidth()">
 
       <!-- ThreadEmpty / Welcome -->
       @if (isEmpty()) {
-        <div class="hvochat-welcome"><p>{{ welcomeText() }}</p></div>
+        <div class="hvochat-welcome" [class.hvochat-welcome--rich]="!!welcomeIcon() || !!welcomeSubText()">
+          @if (welcomeIcon()) { <i class="hvochat-welcome-icon" [ngClass]="welcomeIcon()" aria-hidden="true"></i> }
+          <p class="hvochat-welcome-title">{{ welcomeText() }}</p>
+          @if (welcomeSubText()) { <p class="hvochat-welcome-sub">{{ welcomeSubText() }}</p> }
+        </div>
       }
 
       <!-- ThreadMessages -->
       <div class="hvochat-messages">
         @for (msg of messages() ?? []; track msg.id ?? $index; let last = $last) {
-          @if (msg.role === 'user') {
+          @if (isEntry(msg)) {
+            @if (isSystemLine(msg)) {
+              <!-- Systemzeile (Statuswechsel, Zeitbuchung) -->
+              <div class="hvochat-line" [class.hvochat-msg--last]="last">
+                <span class="hvochat-line-text">{{ msg.text }}</span>
+                @if (msg.badge) { <span class="hvochat-badge" [attr.data-style]="msg.badgeStyle || 'neutral'">{{ msg.badge }}</span> }
+                @if (showTimestamp() && entryTime(msg)) { <span class="hvochat-line-time">{{ entryTime(msg) }}</span> }
+              </div>
+            } @else if (editingId() === msg.id) {
+              <!-- Bearbeiten eines Eintrags -->
+              <div class="hvochat-edit">
+                <div class="hvochat-edit-box">
+                  <textarea #editArea class="hvochat-edit-input" rows="3"
+                    [value]="editText()"
+                    (input)="onEditInput($event)"
+                    (keydown)="onEditKeyDown($event, msg)"></textarea>
+                  @if (msg.attachments?.length) {
+                    <div class="hvochat-attachments hvochat-attachments--edit">
+                      @for (att of msg.attachments; track $index; let i = $index) {
+                        <span class="hvochat-attachment">
+                          <hvochat-internal-icon name="paperclip"></hvochat-internal-icon>
+                          <span class="hvochat-attachment-name">{{ att.name }}</span>
+                          @if (att.size) { <span class="hvochat-attachment-size">{{ att.size }}</span> }
+                          @if (onAttachmentRemove()) {
+                            <button type="button" tabindex="-1" class="hvochat-attachment-remove" [title]="t('removeAttachment')" [attr.aria-label]="t('removeAttachment')" (click)="removeAttachment(msg, i, $event)">
+                              <hvochat-internal-icon name="x"></hvochat-internal-icon>
+                            </button>
+                          }
+                        </span>
+                      }
+                    </div>
+                  }
+                  <div class="hvochat-edit-footer">
+                    @if (allowAttach() && onEditAttach()) {
+                      <button type="button" class="hvochat-btn-text hvochat-btn-ghost hvochat-edit-attach" (click)="editAttach(msg, $event)">
+                        <hvochat-internal-icon name="paperclip"></hvochat-internal-icon> {{ t('attach') }}
+                      </button>
+                    }
+                    <button type="button" class="hvochat-btn-text hvochat-btn-ghost" (click)="cancelEdit()">{{ t('editCancel') }}</button>
+                    <button type="button" class="hvochat-btn-text hvochat-btn-primary" (click)="saveEdit(msg, $event)">{{ t('editSave') }}</button>
+                  </div>
+                </div>
+              </div>
+            } @else {
+              <!-- Verlaufseintrag (Kommentar, Mail, Dokument) -->
+              <div class="hvochat-entry" [class.hvochat-msg--last]="last" [attr.data-kind]="msg.kind">
+                @if (showAuthor()) {
+                  <span class="hvochat-entry-avatar" aria-hidden="true">{{ initials(msg) }}</span>
+                }
+                <div class="hvochat-entry-body">
+                  <div class="hvochat-entry-head">
+                    @if (showAuthor() && msg.authorName) { <span class="hvochat-entry-author">{{ msg.authorName }}</span> }
+                    @if (msg.badge) { <span class="hvochat-badge" [attr.data-style]="msg.badgeStyle || 'neutral'">{{ msg.badge }}</span> }
+                    @if (showTimestamp() && entryTime(msg)) { <span class="hvochat-entry-time">{{ entryTime(msg) }}</span> }
+                    <span class="hvochat-entry-actions">
+                      @if (canEditEntry(msg)) {
+                        <button type="button" tabindex="-1" class="hvochat-icon-btn" [title]="t('edit')" [attr.aria-label]="t('edit')" (click)="startEdit(msg)">
+                          <hvochat-internal-icon name="pencil"></hvochat-internal-icon>
+                        </button>
+                      }
+                      @if (canDeleteEntry(msg)) {
+                        <button type="button" tabindex="-1" class="hvochat-icon-btn" [title]="t('delete')" [attr.aria-label]="t('delete')" (click)="deleteEntry(msg, $event)">
+                          <hvochat-internal-icon name="trash"></hvochat-internal-icon>
+                        </button>
+                      }
+                    </span>
+                  </div>
+                  @if (msg.meta) { <div class="hvochat-entry-meta">{{ msg.meta }}</div> }
+                  <!-- Reiner Text, kein innerHTML: der Server liefert unescaped Text, Zeilenumbrueche per CSS -->
+                  @if (msg.text) { <div class="hvochat-entry-text">{{ msg.text }}</div> }
+                  @if (msg.attachments?.length) {
+                    <div class="hvochat-attachments">
+                      @for (att of msg.attachments; track $index; let i = $index) {
+                        <a class="hvochat-attachment" href="#" [attr.title]="att.name" (click)="attachmentClick(msg, i, $event)">
+                          <hvochat-internal-icon name="paperclip"></hvochat-internal-icon>
+                          <span class="hvochat-attachment-name">{{ att.name }}</span>
+                          @if (att.size) { <span class="hvochat-attachment-size">{{ att.size }}</span> }
+                        </a>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          } @else if (msg.role === 'user') {
             @if (editingId() === msg.id) {
               <!-- EditComposer -->
               <div class="hvochat-edit">
@@ -201,46 +290,57 @@
           }
         }
       </div>
-
-      <!-- ViewportFooter: ScrollToBottom + Composer + Suggestions -->
-      <div class="hvochat-footer" [class.hvochat-footer--sticky]="!isEmpty()">
-        @if (!atBottom() && !isEmpty()) {
-          <button type="button" tabindex="-1" class="hvochat-scroll-bottom"
-            [title]="t('scrollToBottom')" [attr.aria-label]="t('scrollToBottom')"
-            (click)="scrollToBottom()">
-            <hvochat-internal-icon name="arrow-down"></hvochat-internal-icon>
+    </div>
+    </div>
+      @if (!atBottom() && !isEmpty() && !newestFirst()) {
+        <button type="button" tabindex="-1" class="hvochat-scroll-bottom"
+          [title]="t('scrollToBottom')" [attr.aria-label]="t('scrollToBottom')"
+          (click)="scrollToBottom()">
+          <hvochat-internal-icon name="arrow-down"></hvochat-internal-icon>
+        </button>
+      }
+  </div>
+  <!-- Eigenstaendiger Layer: Eingabefeld liegt ausserhalb des Scrollbereichs und behaelt immer seine Position unten -->
+  <div class="hvochat-composer-layer">
+    <div class="hvochat-composer-layer-inner" [style.max-width]="contentWidth()">
+    @if (showComposer()) {
+      <hvochat-internal-composer
+        [(text)]="composerText"
+        [tabSeq]="tabSeq()"
+        [placeholder]="placeholderText()"
+        [submitMode]="submitMode()"
+        [busy]="busy()"
+        [enabled]="enabled()"
+        [maxLength]="maxLength()"
+        [sendLabel]="t('send')"
+        [cancelLabel]="t('cancel')"
+        [allowAttach]="allowAttach() && !!onAttachClick()"
+        [allowMail]="allowMail() && !!onMailClick()"
+        [mailLabel]="t('mail')"
+        [attachLabel]="t('attach')"
+        [removeLabel]="t('removeAttachment')"
+        [pendingAttachments]="pendingAttachments() ?? []"
+        (submitted)="onComposerSubmit($event)"
+        (cancelled)="onComposerCancel($event)"
+        (attachClicked)="onComposerAttach($event)"
+        (mailClicked)="onComposerMail($event)"
+        (pendingRemoved)="onComposerPendingRemove($event)">
+      </hvochat-internal-composer>
+    }
+    @if (isEmpty() && !composerText() && suggestions()?.length) {
+      <!-- ThreadSuggestions -->
+      <div class="hvochat-suggestions">
+        @for (sug of suggestions(); track $index) {
+          <button type="button" class="hvochat-suggestion" [disabled]="!enabled()" (click)="onSuggestion(sug, $event)">
+            <span class="hvochat-suggestion-prompt" aria-hidden="true">&gt;</span>
+            <span class="hvochat-suggestion-text">
+              <span class="hvochat-suggestion-title">{{ sug.title }}</span>
+              @if (sug.description) { <span class="hvochat-suggestion-desc"> {{ sug.description }}</span> }
+            </span>
           </button>
         }
-        @if (showComposer()) {
-          <hvochat-internal-composer
-            [(text)]="composerText"
-            [tabSeq]="tabSeq()"
-            [placeholder]="placeholderText()"
-            [submitMode]="submitMode()"
-            [busy]="busy()"
-            [enabled]="enabled()"
-            [maxLength]="maxLength()"
-            [sendLabel]="t('send')"
-            [cancelLabel]="t('cancel')"
-            (submitted)="onComposerSubmit($event)"
-            (cancelled)="onComposerCancel($event)">
-          </hvochat-internal-composer>
-        }
-        @if (isEmpty() && !composerText() && suggestions()?.length) {
-          <!-- ThreadSuggestions -->
-          <div class="hvochat-suggestions">
-            @for (sug of suggestions(); track $index) {
-              <button type="button" class="hvochat-suggestion" [disabled]="!enabled()" (click)="onSuggestion(sug, $event)">
-                <span class="hvochat-suggestion-prompt" aria-hidden="true">&gt;</span>
-                <span class="hvochat-suggestion-text">
-                  <span class="hvochat-suggestion-title">{{ sug.title }}</span>
-                  @if (sug.description) { <span class="hvochat-suggestion-desc"> {{ sug.description }}</span> }
-                </span>
-              </button>
-            }
-          </div>
-        }
       </div>
+    }
     </div>
   </div>
 </div>

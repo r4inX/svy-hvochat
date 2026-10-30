@@ -13,6 +13,13 @@ export interface HvoChatSubmitEvent {
     event: Event;
 }
 
+/** Vorgemerkter Anhang (nur Anzeige) */
+export interface HvoChatPendingAttachment {
+    id?: string;
+    name?: string;
+    size?: string;
+}
+
 // IME-Komposition (z. B. Tottasten, asiatische Eingabe) meldet keyCode 229
 const cnImeKeyCode = 229;
 
@@ -45,8 +52,20 @@ export class HvoChatComposerCore {
     readonly fillHeight = input<boolean>(false);
     readonly markupId = input<string>(undefined);
     readonly tabSeq = input<number>(undefined);
+    /** true: Bueroklammer-Button links neben dem Senden-Button (attachClicked) */
+    readonly allowAttach = input<boolean>(false);
+    /** true: E-Mail-Symbol links neben der Bueroklammer (mailClicked) */
+    readonly allowMail = input<boolean>(false);
+    readonly mailLabel = input<string>('E-Mail schreiben');
+    readonly attachLabel = input<string>('Datei anhängen');
+    readonly removeLabel = input<string>('Entfernen');
+    /** Vorgemerkte Anhaenge (Chips ueber dem Eingabefeld) */
+    readonly pendingAttachments = input<HvoChatPendingAttachment[]>([]);
 
     readonly submitted = output<HvoChatSubmitEvent>();
+    readonly attachClicked = output<Event>();
+    readonly mailClicked = output<Event>();
+    readonly pendingRemoved = output<{ index: number; event: Event }>();
     readonly cancelled = output<Event>();
     readonly focused = output<FocusEvent>();
     readonly blurred = output<FocusEvent>();
@@ -113,6 +132,34 @@ export class HvoChatComposerCore {
     submit(poEvent: Event): void {
         if (!this.canSend()) return;
         this.submitted.emit({ text: this.text().trim(), event: poEvent });
+    }
+
+    /**
+     * Klick auf das E-Mail-Symbol.
+     * @param {Event} poEvent
+     */
+    mail(poEvent: Event): void {
+        if (!this.editable()) return;
+        this.mailClicked.emit(poEvent);
+    }
+
+    /**
+     * Klick auf die Bueroklammer.
+     * @param {Event} poEvent
+     */
+    attach(poEvent: Event): void {
+        if (!this.editable()) return;
+        this.attachClicked.emit(poEvent);
+    }
+
+    /**
+     * Entfernt einen vorgemerkten Anhang.
+     * @param {number} pnIndex
+     * @param {Event} poEvent
+     */
+    removePending(pnIndex: number, poEvent: Event): void {
+        if (!this.editable()) return;
+        this.pendingRemoved.emit({ index: pnIndex, event: poEvent });
     }
 
     /**
