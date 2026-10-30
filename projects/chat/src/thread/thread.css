@@ -44,7 +44,7 @@
     flex-direction: column;
     width: 100%;
     margin: 0 auto;
-    padding: 1rem 1rem 0;
+    padding: 1rem 1rem 0.5rem;
 }
 
 .hvochat-thread-inner--empty {
@@ -571,27 +571,34 @@
     border-radius: 0.75rem;
 }
 
-/* --- Footer / Composer / ScrollToBottom --- */
-.hvochat-footer {
+/* --- Composer-Layer (fix unten) / ScrollToBottom --- */
+.hvochat-composer-layer {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    padding-bottom: 1rem;
+    z-index: 5;
+    flex: 0 0 auto;
+    padding: 0.5rem 1rem 1rem;
     background: var(--hvochat-background, #ffffff);
 }
 
-.hvochat-footer--sticky {
-    position: sticky;
-    bottom: 0;
-    margin-top: auto;
-    border-top-left-radius: var(--hvochat-radius, 1rem);
-    border-top-right-radius: var(--hvochat-radius, 1rem);
+.hvochat-composer-layer-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.hvochat-thread-body {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
 }
 
 .hvochat-scroll-bottom {
     position: absolute;
-    top: -3rem;
+    bottom: 1rem;
     left: 50%;
     z-index: 10;
     display: inline-flex;

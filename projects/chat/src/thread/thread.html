@@ -1,4 +1,5 @@
 <div class="hvochat-thread" [class]="styleClass()" [id]="servoyApi.getMarkupId()" #element>
+  <div class="hvochat-thread-body">
   <div class="hvochat-thread-viewport" #viewport (scroll)="onViewportScroll()">
     <div class="hvochat-thread-inner" [class.hvochat-thread-inner--empty]="isEmpty() && !isRichEmpty()" [class.hvochat-thread-inner--rich-empty]="isRichEmpty()" [style.max-width]="contentWidth()">
 
@@ -289,55 +290,57 @@
           }
         }
       </div>
-
-      <!-- ViewportFooter: ScrollToBottom + Composer + Suggestions -->
-      <div class="hvochat-footer" [class.hvochat-footer--sticky]="!isEmpty() || isRichEmpty()">
-        @if (!atBottom() && !isEmpty() && !newestFirst()) {
-          <button type="button" tabindex="-1" class="hvochat-scroll-bottom"
-            [title]="t('scrollToBottom')" [attr.aria-label]="t('scrollToBottom')"
-            (click)="scrollToBottom()">
-            <hvochat-internal-icon name="arrow-down"></hvochat-internal-icon>
+    </div>
+    </div>
+      @if (!atBottom() && !isEmpty() && !newestFirst()) {
+        <button type="button" tabindex="-1" class="hvochat-scroll-bottom"
+          [title]="t('scrollToBottom')" [attr.aria-label]="t('scrollToBottom')"
+          (click)="scrollToBottom()">
+          <hvochat-internal-icon name="arrow-down"></hvochat-internal-icon>
+        </button>
+      }
+  </div>
+  <!-- Eigenstaendiger Layer: Eingabefeld liegt ausserhalb des Scrollbereichs und behaelt immer seine Position unten -->
+  <div class="hvochat-composer-layer">
+    <div class="hvochat-composer-layer-inner" [style.max-width]="contentWidth()">
+    @if (showComposer()) {
+      <hvochat-internal-composer
+        [(text)]="composerText"
+        [tabSeq]="tabSeq()"
+        [placeholder]="placeholderText()"
+        [submitMode]="submitMode()"
+        [busy]="busy()"
+        [enabled]="enabled()"
+        [maxLength]="maxLength()"
+        [sendLabel]="t('send')"
+        [cancelLabel]="t('cancel')"
+        [allowAttach]="allowAttach() && !!onAttachClick()"
+        [allowMail]="allowMail() && !!onMailClick()"
+        [mailLabel]="t('mail')"
+        [attachLabel]="t('attach')"
+        [removeLabel]="t('removeAttachment')"
+        [pendingAttachments]="pendingAttachments() ?? []"
+        (submitted)="onComposerSubmit($event)"
+        (cancelled)="onComposerCancel($event)"
+        (attachClicked)="onComposerAttach($event)"
+        (mailClicked)="onComposerMail($event)"
+        (pendingRemoved)="onComposerPendingRemove($event)">
+      </hvochat-internal-composer>
+    }
+    @if (isEmpty() && !composerText() && suggestions()?.length) {
+      <!-- ThreadSuggestions -->
+      <div class="hvochat-suggestions">
+        @for (sug of suggestions(); track $index) {
+          <button type="button" class="hvochat-suggestion" [disabled]="!enabled()" (click)="onSuggestion(sug, $event)">
+            <span class="hvochat-suggestion-prompt" aria-hidden="true">&gt;</span>
+            <span class="hvochat-suggestion-text">
+              <span class="hvochat-suggestion-title">{{ sug.title }}</span>
+              @if (sug.description) { <span class="hvochat-suggestion-desc"> {{ sug.description }}</span> }
+            </span>
           </button>
         }
-        @if (showComposer()) {
-          <hvochat-internal-composer
-            [(text)]="composerText"
-            [tabSeq]="tabSeq()"
-            [placeholder]="placeholderText()"
-            [submitMode]="submitMode()"
-            [busy]="busy()"
-            [enabled]="enabled()"
-            [maxLength]="maxLength()"
-            [sendLabel]="t('send')"
-            [cancelLabel]="t('cancel')"
-            [allowAttach]="allowAttach() && !!onAttachClick()"
-            [allowMail]="allowMail() && !!onMailClick()"
-            [mailLabel]="t('mail')"
-            [attachLabel]="t('attach')"
-            [removeLabel]="t('removeAttachment')"
-            [pendingAttachments]="pendingAttachments() ?? []"
-            (submitted)="onComposerSubmit($event)"
-            (cancelled)="onComposerCancel($event)"
-            (attachClicked)="onComposerAttach($event)"
-            (mailClicked)="onComposerMail($event)"
-            (pendingRemoved)="onComposerPendingRemove($event)">
-          </hvochat-internal-composer>
-        }
-        @if (isEmpty() && !composerText() && suggestions()?.length) {
-          <!-- ThreadSuggestions -->
-          <div class="hvochat-suggestions">
-            @for (sug of suggestions(); track $index) {
-              <button type="button" class="hvochat-suggestion" [disabled]="!enabled()" (click)="onSuggestion(sug, $event)">
-                <span class="hvochat-suggestion-prompt" aria-hidden="true">&gt;</span>
-                <span class="hvochat-suggestion-text">
-                  <span class="hvochat-suggestion-title">{{ sug.title }}</span>
-                  @if (sug.description) { <span class="hvochat-suggestion-desc"> {{ sug.description }}</span> }
-                </span>
-              </button>
-            }
-          </div>
-        }
       </div>
+    }
     </div>
   </div>
 </div>
