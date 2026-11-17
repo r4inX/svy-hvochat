@@ -1,4 +1,4 @@
-<div class="hvochat-thread" [class]="styleClass()" [id]="servoyApi.getMarkupId()" #element>
+<div class="hvochat-thread" [class]="styleClass()" [id]="servoyApi().getMarkupId()" #element>
   <div class="hvochat-thread-body">
   <div class="hvochat-thread-viewport" #viewport (scroll)="onViewportScroll()">
     <div class="hvochat-thread-inner" [class.hvochat-thread-inner--empty]="isEmpty() && !isRichEmpty()" [class.hvochat-thread-inner--rich-empty]="isRichEmpty()" [style.max-width]="contentWidth()">

@@ -5,9 +5,13 @@
   "symbolic": "hvochat",
   "npmName": "@hvo/chat",
   "dist": "dist/hvo/chat",
-  "moduleClass": "HvoChatModule",
+  "ng2Components": [
+    "HvoChatComposer",
+    "HvoChatThread",
+    "HvoChatFeedback"
+  ],
   "display": "HVO Chat",
-  "version": "1.1.1",
+  "version": "2.0.0",
   "category": "HVO",
   "license": "MIT",
   "source": "https://github.com/assistant-ui/assistant-ui (packages/react ComposerInput, packages/ui thread composer)",
@@ -17,14 +21,15 @@
     "feedback"
   ],
   "env": {
-    "ting": "2026.6.0",
-    "angular": "21.2.16",
-    "angularMajor": "21",
-    "angularBuild": "21.2.14",
-    "typescript": "5.9.3",
+    "ting": "2026.9.0",
+    "angular": "22.1.8",
+    "angularMajor": "22",
+    "angularBuild": "22.1.9",
+    "typescript": "6.0.3",
     "rxjs": "7.8.2",
-    "zoneJs": "0.16.2",
     "tslib": "2.8.1",
-    "servoyPublic": "2026.3.0"
+    "servoyPublic": "2026.9.5",
+    "node": "24.15+",
+    "wiring": "standalone (NG2-Components)"
   }
 }

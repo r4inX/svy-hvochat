@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, SimpleChange, ViewChild } from '@angular/core';
 import { JSEvent, ServoyApiTesting } from '@servoy/public';
-import { HvoChatFeedback, HvoChatFeedbackValue, HvoChatMessage, HvoChatSuggestion, HvoChatThread } from '../../chat/src/public-api';
+import { HvoChatComposer, HvoChatFeedback, HvoChatFeedbackValue, HvoChatMessage, HvoChatSuggestion, HvoChatThread } from '../../chat/src/public-api';
 
 // Verzoegerung, mit der der "Host" message.feedback setzt (simuliert den Server-Roundtrip)
 const cnFeedbackRoundtripMs = 400;
@@ -39,7 +39,8 @@ const cnChunkMs = 30;
     selector: 'hvochat-demo',
     templateUrl: './demo.component.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
+    standalone: true,
+    imports: [HvoChatThread, HvoChatComposer, HvoChatFeedback]
 })
 export class DemoComponent {
     @ViewChild('thread') thread!: HvoChatThread;

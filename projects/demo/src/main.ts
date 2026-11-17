@@ -1,19 +1,12 @@
-import 'zone.js';
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+import { bootstrapApplication } from '@angular/platform-browser';
+import { importProvidersFrom, provideZonelessChangeDetection } from '@angular/core';
 import { ServoyPublicTestingModule } from '@servoy/public';
-import { HvoChatModule } from '../../chat/src/public-api';
 import { DemoComponent } from './demo.component';
 
 /**
- * Demo-Modul: rendert die Komponenten mit den Servoy-Test-Attrappen (kein Servoy noetig).
+ * Demo-App: rendert die Komponenten mit den Servoy-Test-Attrappen (kein Servoy nötig).
+ * Zoneless wie der Titanium-Client ab Servoy 2026.9.
  */
-@NgModule({
-    declarations: [DemoComponent],
-    imports: [BrowserModule, ServoyPublicTestingModule, HvoChatModule],
-    bootstrap: [DemoComponent]
-})
-class DemoModule { }
-
-platformBrowserDynamic().bootstrapModule(DemoModule).catch((leError) => console.error(leError));
+bootstrapApplication(DemoComponent, {
+    providers: [provideZonelessChangeDetection(), importProvidersFrom(ServoyPublicTestingModule)]
+}).catch((leError) => console.error(leError));

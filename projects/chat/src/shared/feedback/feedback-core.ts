@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, signal, viewChild } from '@angular/core';
+import { ServoyPublicModule } from '@servoy/public';
+import { HvoChatIcon } from '../icon/icon';
 
 /** Bewertung einer Antwort */
 export type HvoChatFeedbackValue = 'positive' | 'negative';
@@ -60,7 +62,8 @@ const cnImeKeyCode = 229;
     templateUrl: './feedback-core.html',
     styleUrls: ['./feedback-core.css'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
+    standalone: true,
+    imports: [ServoyPublicModule, HvoChatIcon]
 })
 export class HvoChatFeedbackCore {
 
@@ -75,7 +78,7 @@ export class HvoChatFeedbackCore {
     readonly autohide = input<boolean>(false);
     /** Daumen per Tab erreichbar (Standalone); im Thread sind die Aktionsbuttons aus der Tab-Reihenfolge genommen */
     readonly focusable = input<boolean>(false);
-    readonly tabSeq = input<number>(undefined);
+    readonly tabSeq = input<number>();
 
     readonly feedbackClick = output<HvoChatFeedbackClick>();
     readonly commentSubmit = output<HvoChatFeedbackComment>();

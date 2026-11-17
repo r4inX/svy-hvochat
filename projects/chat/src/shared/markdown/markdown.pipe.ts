@@ -1,4 +1,4 @@
-import { Pipe, PipeTransform } from '@angular/core';
+import { Pipe, PipeTransform, inject } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
@@ -43,11 +43,10 @@ export function renderChatText(pcText: string, pbMarkdown: boolean): string {
  * Pipe fuer Chat-Texte: {{ text | hvochatMarkdown:true }} als [innerHTML].
  * Pure Pipe: wird nur neu berechnet, wenn sich der Text-String aendert (Streaming = neuer String).
  */
-@Pipe({ name: 'hvochatMarkdown', standalone: false })
+@Pipe({ name: 'hvochatMarkdown', standalone: true })
 export class HvoChatMarkdownPipe implements PipeTransform {
 
-    constructor(private sanitizer: DomSanitizer) {
-    }
+    private readonly sanitizer = inject(DomSanitizer);
 
     /**
      * @param {string} pcText - Quelltext

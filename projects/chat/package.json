@@ -1,14 +1,8 @@
 {
   "name": "@hvo/chat",
-  "version": "1.1.1",
-  "peerDependencies": {
-    "@angular/common": "^21",
-    "@angular/core": "^21",
-    "@angular/forms": "^21",
-    "@angular/platform-browser": "^21"
-  },
+  "version": "2.0.0",
   "dependencies": {
-    "dompurify": "^3.4.0",
+    "dompurify": "^3.4.18",
     "marked": "^18.0.0",
     "tslib": "*"
   },
