@@ -1,6 +1,8 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "strict": true,
+    "ignoreDeprecations": "6.0",
     "paths": {},
     "baseUrl": "./",
     "outDir": "./dist/out-tsc",

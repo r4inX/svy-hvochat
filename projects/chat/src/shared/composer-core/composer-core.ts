@@ -3,6 +3,8 @@
 //   packages/ui/src/components/react/assistant-ui/elements/thread.aui.tsx  (Composer, ComposerAction: Optik)
 //   Stand: b6444661cf03cae6c5e10baba1e12c9e010b8ea0
 import { ChangeDetectionStrategy, Component, ElementRef, afterRenderEffect, computed, input, model, output, viewChild } from '@angular/core';
+import { ServoyPublicModule } from '@servoy/public';
+import { HvoChatIcon } from '../icon/icon';
 
 /** Absende-Modus: Enter | Strg/Cmd+Enter | nur Button */
 export type HvoChatSubmitMode = 'enter' | 'ctrlEnter' | 'none';
@@ -33,7 +35,8 @@ const cnImeKeyCode = 229;
     templateUrl: './composer-core.html',
     styleUrls: ['./composer-core.css'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
+    standalone: true,
+    imports: [ServoyPublicModule, HvoChatIcon]
 })
 export class HvoChatComposerCore {
 
@@ -50,8 +53,8 @@ export class HvoChatComposerCore {
     readonly cancelLabel = input<string>('Antwort abbrechen');
     /** true: fuellt die vorgegebene Hoehe (Absolute-Layout), sonst Auto-Grow bis maxHeight */
     readonly fillHeight = input<boolean>(false);
-    readonly markupId = input<string>(undefined);
-    readonly tabSeq = input<number>(undefined);
+    readonly markupId = input<string>();
+    readonly tabSeq = input<number>();
     /** true: Bueroklammer-Button links neben dem Senden-Button (attachClicked) */
     readonly allowAttach = input<boolean>(false);
     /** true: E-Mail-Symbol links neben der Bueroklammer (mailClicked) */

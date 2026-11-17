@@ -41,7 +41,7 @@ export type HvoChatIconName =
 </svg>`,
     styles: [':host { display: inline-flex; width: 1rem; height: 1rem; flex: 0 0 auto; } svg { width: 100%; height: 100%; }'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
+    standalone: true
 })
 export class HvoChatIcon {
     readonly name = input.required<HvoChatIconName>();

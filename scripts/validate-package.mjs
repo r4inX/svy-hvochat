@@ -167,12 +167,21 @@ const lcPackageType = loMain['Package-Type'];
 const lbComponentPkg = lcPackageType === 'Web-Component';
 const lbServicePkg = lcPackageType === 'Web-Service';
 if (!lbComponentPkg && !lbServicePkg) err(`MANIFEST.MF: Package-Type "${lcPackageType}" - erwartet Web-Component oder Web-Service`);
-if (loMain['NG2-Components']) warn('MANIFEST.MF: "NG2-Components" gibt es erst ab Servoy 2026.9 (Angular 22). Fuer 2026.3/2026.6 "NG2-Module" verwenden.');
+const loRootPkg = readJsonLoose(join(lcRoot, 'package.json'));
+const lcAngularRange = loRootPkg?.dependencies?.['@angular/core'] || '';
+const lnAngularMajor = Number((lcAngularRange.match(/\d+/) || [0])[0]);
+// Ab Angular 22 (Servoy 2026.9): Standalone-Komponenten und MANIFEST "NG2-Components", davor NgModule und "NG2-Module"
+const lbStandalone = lnAngularMajor >= 22;
+const lcWiringKey = lbStandalone ? 'NG2-Components' : 'NG2-Module';
+if (lbStandalone && loMain['NG2-Module']) err('MANIFEST.MF: "NG2-Module" gibt es ab Servoy 2026.9 (Angular 22) nicht mehr - "NG2-Components: KlasseA,KlasseB" verwenden.');
+if (!lbStandalone && loMain['NG2-Components']) warn('MANIFEST.MF: "NG2-Components" gibt es erst ab Servoy 2026.9 (Angular 22). Fuer 2026.3/2026.6 "NG2-Module" verwenden.');
 if (lbComponentPkg) {
-    for (const lcKey of ['NPM-PackageName', 'NG2-Module', 'Entry-Point']) {
-        if (!loMain[lcKey] && !(lcKey === 'NG2-Module' && loMain['NG2-Components'])) err(`MANIFEST.MF: "${lcKey}" fehlt (Pflicht fuer Titanium-Component-Packages)`);
+    for (const lcKey of ['NPM-PackageName', lcWiringKey, 'Entry-Point']) {
+        if (!loMain[lcKey]) err(`MANIFEST.MF: "${lcKey}" fehlt (Pflicht fuer Titanium-Component-Packages)`);
     }
 }
+/** @type {string[]} Klassen aus NG2-Components */
+const laNg2Components = (loMain['NG2-Components'] || '').split(',').map(lcC => lcC.trim()).filter(Boolean);
 if (loMain['NG2-CSS-ClientLibs'] && loMain['NG2-CSS-ClientLibs'].includes(';') && !/;priority=\d+/.test(loMain['NG2-CSS-ClientLibs'])) {
     warn('MANIFEST.MF: NG2-CSS-ClientLibs mit ";" getrennt - Servoy trennt Listen mit "," (";" nur fuer ;priority=N)');
 }
@@ -199,10 +208,6 @@ if (lcLibDir && existsSync(lcLibDir)) {
     if (!loLibPkg) err(`${lcRel(lcLibDir)}/package.json fehlt`);
     if (!loNgPackage) err(`${lcRel(lcLibDir)}/ng-package.json fehlt`);
 }
-const loRootPkg = readJsonLoose(join(lcRoot, 'package.json'));
-const lcAngularRange = loRootPkg?.dependencies?.['@angular/core'] || '';
-const lnAngularMajor = Number((lcAngularRange.match(/\d+/) || [0])[0]);
-
 if (loLibPkg) {
     if (lbComponentPkg && loMain['NPM-PackageName'] && loLibPkg.name !== loMain['NPM-PackageName']) {
         err(`NPM-PackageName "${loMain['NPM-PackageName']}" != Name in ${lcRel(lcLibDir)}/package.json ("${loLibPkg.name}")`);
@@ -213,8 +218,9 @@ if (loLibPkg) {
         if (!laAllowed.includes(lcDep)) err(`ng-package.json: "${lcDep}" fehlt in allowedNonPeerDependencies (ng-packagr bricht sonst ab)`);
         if (loRootPkg && !(loRootPkg.dependencies?.[lcDep] || loRootPkg.devDependencies?.[lcDep])) warn(`package.json (Root): "${lcDep}" fehlt - lokaler Build findet die Bibliothek nicht`);
     }
+    if (lbStandalone && loLibPkg.peerDependencies) warn(`${lcRel(lcLibDir)}/package.json: peerDependencies entfernen - ab Servoy 2026.9 stellt der Titanium-Client Angular bereit`);
     for (const lcDep of Object.keys(loLibPkg.dependencies || {})) {
-        if (/^@angular\//.test(lcDep)) warn(`${lcRel(lcLibDir)}/package.json: "${lcDep}" gehoert in peerDependencies, nicht dependencies`);
+        if (/^@angular\//.test(lcDep) && !lbStandalone) warn(`${lcRel(lcLibDir)}/package.json: "${lcDep}" gehoert in peerDependencies, nicht dependencies`);
         if (/^(react|react-dom|vue|svelte|preact)$/.test(lcDep)) warn(`${lcRel(lcLibDir)}/package.json: "${lcDep}" - Fremd-Framework im Titanium-Client. Bewusst so entschieden? (Standard: nach Angular portieren)`);
     }
 }
@@ -285,6 +291,13 @@ if (lcModuleClass) {
         if (!isExportedViaApi(lcModFile)) err(`${lcModuleClass} wird nicht aus der public-api exportiert`);
         if (!/ServoyPublicModule/.test(lcModuleSrc)) warn(`${lcModuleClass}: ServoyPublicModule nicht importiert (sabloTabseq, svyFormat, ... fehlen dann)`);
     }
+}
+
+// NG2-Components (Servoy 2026.9+): jede Klasse muss existieren und aus der public-api exportiert sein
+for (const lcCompClass of laNg2Components) {
+    const lcCompFile = findClassFile(lcCompClass);
+    if (!lcCompFile) err(`NG2-Components "${lcCompClass}": keine exportierte Klasse dieses Namens gefunden`);
+    else if (!isExportedViaApi(lcCompFile)) err(`NG2-Components "${lcCompClass}": nicht aus der public-api exportiert`);
 }
 
 // --- Specs
@@ -366,7 +379,9 @@ for (const loEntry of laEntrySpecs) {
         }
         if (!laClassMatch) warn(`${lcFileRel}: Klasse erweitert nicht ServoyBaseComponent`);
         if (hasInheritedInputs) info(`${lcFileRel}: erbt von externer Klasse ${lcParent} - Input/API-Pruefung uebersprungen`);
-        if (lnAngularMajor && lnAngularMajor < 22 && !/standalone\s*:\s*false/.test(lcSrc)) err(`${lcFileRel}: "standalone: false" fehlt (Servoy < 2026.9 deklariert Komponenten im NgModule)`);
+        if (lnAngularMajor && !lbStandalone && !/standalone\s*:\s*false/.test(lcSrc)) err(`${lcFileRel}: "standalone: false" fehlt (Servoy < 2026.9 deklariert Komponenten im NgModule)`);
+        if (lbStandalone && /standalone\s*:\s*false/.test(lcSrc)) err(`${lcFileRel}: "standalone: false" - ab Servoy 2026.9 muessen Komponenten standalone sein`);
+        if (lbStandalone && /constructor\s*\([^)]*(Renderer2|ChangeDetectorRef)/.test(lcSrc)) err(`${lcFileRel}: Konstruktor mit Renderer2/ChangeDetectorRef - ab Servoy 2026.9 hat ServoyBaseComponent keine Konstruktor-Parameter, inject() verwenden`);
         if (!/ChangeDetectionStrategy\.OnPush/.test(lcSrc)) warn(`${lcFileRel}: ChangeDetectionStrategy.OnPush empfohlen`);
         for (const lcHook of ['ngOnInit', 'ngOnChanges', 'ngAfterViewInit']) {
             if (!new RegExp(`^\\s*(public\\s+)?${lcHook}\\s*\\(`, 'm').test(lcSrc)) continue;
@@ -422,6 +437,8 @@ for (const loEntry of laEntrySpecs) {
             if (!hasMethod(lcSrc, lcApiName)) info(`${lcFileRel}: internalApi "${lcApiName}" nicht im Client - muss im serverscript ($scope.${lcApiName}) liegen`);
         }
 
+        // Standalone: Klasse muss in NG2-Components stehen
+        if (lbStandalone && lcClassName && !laNg2Components.includes(lcClassName)) err(`MANIFEST.MF: ${lcClassName} fehlt in NG2-Components`);
         // NgModule
         if (lcClassName && lcModuleSrc) {
             const laDecl = lcModuleSrc.match(/declarations\s*:\s*\[([\s\S]*?)\]/);

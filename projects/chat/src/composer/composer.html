@@ -1,7 +1,7 @@
 <div class="hvochat-composer" [class]="styleClass()" [class.hvochat-composer--fill]="isFillLayout()" #element>
   <hvochat-internal-composer
     [(text)]="draft"
-    [markupId]="servoyApi.getMarkupId()"
+    [markupId]="servoyApi().getMarkupId()"
     [tabSeq]="tabSeq()"
     [placeholder]="placeholderText()"
     [submitMode]="submitMode()"

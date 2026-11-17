@@ -8,7 +8,7 @@ Servoy-Titanium-Web-Package mit Chat-Komponenten, portiert aus [assistant-ui](ht
 | --- | --- |
 | **Bundle** | `hvochat` (Package-Typ Web-Component) |
 | **Version** | siehe [Versionshistorie](#versionshistorie) bzw. `META-INF/MANIFEST.MF` |
-| **Zielversion** | Servoy 2026.3 – 2026.6, Angular 21, `@servoy/public` 2026.3.0 |
+| **Zielversion** | Servoy 2026.9+, Angular 22, `@servoy/public` 2026.9 (Standalone-Komponenten, zoneless-fähig). Für Servoy 2026.3 – 2026.6 die Versionen 1.x verwenden (letzte: 1.1.1). |
 | **Erzeugt mit** | Claude-Skill `convert-to-servoy-comp` |
 | **Lizenz** | [MIT](LICENSE), Drittanbieter-Lizenzen siehe [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) (assistant-ui MIT, Lucide ISC, marked MIT, DOMPurify MPL-2.0/Apache-2.0) |
 
@@ -205,7 +205,7 @@ Ohne die Bubble-Variablen erscheinen Antworten wie bei assistant-ui als Fließte
 
 ## Entwicklung
 
-**Voraussetzungen:** Node.js 20.19+ oder 22.12+, npm, Git. Optional Servoy Developer 2026.3 – 2026.6 für den Test im Client.
+**Voraussetzungen:** Node.js 22.22.3+ oder 24.15+ (Angular 22; Servoy 2026.9 bringt Node 24.18 mit), npm, Git. Optional Servoy Developer 2026.9+ für den Test im Client.
 
 ```bash
 git clone https://github.com/r4inX/svy-hvochat.git
@@ -216,7 +216,7 @@ npm install                    # nur im Package-Root, nie in projects/chat
 | Befehl | Zweck |
 | --- | --- |
 | `npm run build` | Library nach `dist/hvo/chat` bauen |
-| `npm run validate` | Konsistenzprüfung Spec ↔ TypeScript ↔ MANIFEST ↔ Modul (muss 0 Fehler melden) |
+| `npm run validate` | Konsistenzprüfung Spec ↔ TypeScript ↔ MANIFEST (`NG2-Components`) (muss 0 Fehler melden) |
 | `npm run demo` | lokale Demo ohne Servoy auf <http://localhost:4300>. Simuliert Streaming, Feedback-Roundtrip und alle Handler; das Handler-Log steht rechts auf der Seite. |
 | `npm run set-version -- x.y.z` | Version an allen Stellen setzen |
 | `npm run make_release` | Production-Build und `hvochat.zip` erzeugen |
@@ -225,13 +225,12 @@ npm install                    # nur im Package-Root, nie in projects/chat
 **Projektstruktur:**
 
 ```
-META-INF/MANIFEST.MF          Package-Beschreibung für Servoy (Bundle-Version, NG2-Module, Specs)
+META-INF/MANIFEST.MF          Package-Beschreibung für Servoy (Bundle-Version, NG2-Components, Specs)
 composer/  thread/  feedback/ pro Element: .spec (Schnittstelle), _doc.js (Doku), Icon, NG1-Stub;
                               thread/thread_server.js: serverseitige API (addMessage, appendText …)
 projects/chat/src/            Angular-Library
   composer/ thread/ feedback/ Servoy-Komponenten (Wrapper)
   shared/                     interne Bausteine: composer-core, feedback-core, markdown, icon
-  chat.module.ts              NgModule (deklariert alles, exportiert die drei Elemente)
 projects/demo/                lokale Demo-App (nicht Teil des Zips)
 scripts/                      build.js (Zip), validate-package.mjs, set-version.mjs
 servoy-package.config.json    Zustand für den Skill-Scaffold (--add)
@@ -239,6 +238,10 @@ servoy-package.config.json    Zustand für den Skill-Scaffold (--add)
 
 **Regeln:**
 - Jede Property der Spec braucht ein gleichnamiges `input()`. Sonst kommt der Wert nie an, ohne dass ein Build-Fehler auftritt. `npm run validate` prüft das.
+- Alle Komponenten sind `standalone: true` und importieren ihre Bausteine selbst (`imports: [...]`). Es gibt kein NgModule.
+- Kein Konstruktor mit `Renderer2`/`ChangeDetectorRef`: `ServoyBaseComponent` holt beides per `inject()`. Eigene Services ebenfalls per `inject()`.
+- `servoyApi`, `name` und `elementRef` der Basisklasse sind Signals: `this.servoyApi().getMarkupId()`.
+- Zustand, der im Template gebunden ist, liegt in `signal()`/`computed()` (OnPush, zoneless).
 - Kein `console.log` im Library-Code.
 - Code-Kommentare auf Deutsch.
 
@@ -261,7 +264,7 @@ servoy-package.config.json    Zustand für den Skill-Scaffold (--add)
 
 ## Package erweitern
 
-Neue Elemente am einfachsten mit dem Skill anlegen, z. B. „Füge dem Package svy-hvochat ein Element threadlist hinzu“. Das läuft über `scaffold.mjs --add`, das MANIFEST, Modul, `public-api.ts` und `build.js` ergänzt.
+Der Skill `convert-to-servoy-comp` (`scaffold.mjs --add`) erzeugt noch NgModule-Code für Servoy 2026.3 – 2026.6. Für dieses Package ein neues Element daher so anlegen: Komponente `standalone: true` mit eigenen `imports`, Klasse in `NG2-Components` der `META-INF/MANIFEST.MF` und in `public-api.ts` eintragen, Ordner in `scripts/build.js` aufnehmen. Danach `npm run validate`.
 
 Services (`plugins.xyz`) brauchen ein **eigenes** Package, weil ein Package genau einen Typ hat.
 
@@ -269,6 +272,7 @@ Services (`plugins.xyz`) brauchen ein **eigenes** Package, weil ein Package gena
 
 | Version | Änderungen |
 | --- | --- |
+| 2.0.0 | Umstellung auf Servoy 2026.9 und Angular 22. Läuft nicht mehr unter Servoy 2026.3 – 2026.6 (dort 1.1.1 verwenden). Alle Komponenten standalone, MANIFEST `NG2-Components` statt `NG2-Module`, `HvoChatModule` entfällt. `@servoy/public` 2026.9, TypeScript 6 (strict), keine `peerDependencies` mehr. Spec, Properties, Handler, API und CSS sind unverändert. |
 | 1.1.1 | Thread: Eingabefeld (Composer, Anhänge, E-Mail, Vorschläge) ist ein eigenständiger Layer unterhalb des Scrollbereichs und behält immer seine Position unten. Nur der Verlauf scrollt. Der Button „Nach unten scrollen“ sitzt unten im Scrollbereich. |
 | 1.1.0 | Thread als Ticket-Verlauf nutzbar (alles optional, Standardverhalten wie 1.0.4): `message.kind` (`comment`, `mail_in`, `mail_out`, `document`, `time`, `system`, `appointment`, `task`, `address`) mit Autor, Zeit, Badge, Zusatzzeile und Anhängen, Bearbeiten und Löschen pro Eintrag (`canEdit`, `canDelete`, `allowDelete`, `onEdit`, `onDelete`, `onEditCancel`), Anhänge beim Bearbeiten entfernen und hinzufügen (`onAttachmentRemove`, `onEditAttach`), Büroklammer und E-Mail-Symbol im Eingabefeld mit vorgemerkten Anhängen (`allowAttach`, `allowMail`, `pendingAttachments`, `onAttachClick`, `onMailClick`, `onPendingRemove`), neuer Typ `attachment` und Handler `onAttachmentClick`, leerer Zustand als Hinweis mit Symbol und Zusatzzeile (`welcomeIcon`, `welcomeSubText`, Eingabefeld bleibt unten), neueste Einträge oben (`newestFirst`, API `scrollToTop`). Einträge werden als reiner Text dargestellt (kein HTML). |
 | 1.0.4 | Thread: „Antwort wird erzeugt“-Indikator als animierte Drei-Punkte-Anzeige (Typing Indicator) statt eines pulsierenden Punkts. Ohne Animation (`prefers-reduced-motion`) bleiben alle drei Punkte sichtbar. |

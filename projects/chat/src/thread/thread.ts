@@ -2,11 +2,13 @@
 // ActionBar, ActionBarMore, BranchPicker, Suggestion, Error, ChainOfThought/Reasoning, Sources.
 // Optik: packages/ui/src/components/react/assistant-ui/elements/thread.aui.tsx, markdown-text.tsx,
 // reasoning.tsx, sources.tsx @ b6444661cf03cae6c5e10baba1e12c9e010b8ea0 - siehe THIRD_PARTY_NOTICES.md
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, Renderer2, SimpleChanges, computed, input, signal, viewChild } from '@angular/core';
-import { JSEvent, ServoyBaseComponent, ServoyPublicService } from '@servoy/public';
+import { NgClass, NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, SimpleChanges, computed, input, signal, viewChild, inject } from '@angular/core';
+import { EventLike, JSEvent, ServoyBaseComponent, ServoyPublicService } from '@servoy/public';
 import { HvoChatComposerCore, HvoChatPendingAttachment, HvoChatSubmitEvent, HvoChatSubmitMode } from '../shared/composer-core/composer-core';
-import { HVOCHAT_FEEDBACK_DEFAULT_TEXTS, HvoChatFeedbackTexts } from '../shared/feedback/feedback-core';
-import { renderChatText } from '../shared/markdown/markdown.pipe';
+import { HVOCHAT_FEEDBACK_DEFAULT_TEXTS, HvoChatFeedbackCore, HvoChatFeedbackTexts } from '../shared/feedback/feedback-core';
+import { HvoChatIcon } from '../shared/icon/icon';
+import { HvoChatMarkdownPipe, renderChatText } from '../shared/markdown/markdown.pipe';
 
 /** Quelle einer Antwort (RAG) - .spec-Typ "source" */
 export interface HvoChatSource {
@@ -118,18 +120,19 @@ const cnDefaultCommentMaxLength = 1000;
     templateUrl: './thread.html',
     styleUrls: ['./thread.css'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
+    standalone: true,
+    imports: [NgClass, NgTemplateOutlet, HvoChatComposerCore, HvoChatFeedbackCore, HvoChatIcon, HvoChatMarkdownPipe]
 })
 export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implements OnDestroy {
 
     // --- Model (1:1 zur .spec) ---
-    readonly messages = input<HvoChatMessage[]>(undefined);
-    readonly suggestions = input<HvoChatSuggestion[]>(undefined);
+    readonly messages = input<HvoChatMessage[]>();
+    readonly suggestions = input<HvoChatSuggestion[]>();
     readonly busy = input<boolean, boolean | undefined>(false, { transform: (pbValue) => !!pbValue });
     readonly welcomeText = input<string, string | undefined>('Wie kann ich helfen?', { transform: (pcValue) => pcValue ?? 'Wie kann ich helfen?' });
     readonly placeholderText = input<string, string | undefined>('Nachricht eingeben …', { transform: (pcValue) => pcValue ?? 'Nachricht eingeben …' });
-    readonly welcomeIcon = input<string>(undefined);
-    readonly welcomeSubText = input<string>(undefined);
+    readonly welcomeIcon = input<string>();
+    readonly welcomeSubText = input<string>();
     readonly submitMode = input<HvoChatSubmitMode, HvoChatSubmitMode | undefined>('enter', { transform: (pcValue) => pcValue ?? 'enter' });
     readonly maxLength = input<number, number | undefined>(0, { transform: (pnValue) => pnValue ?? 0 });
     readonly showComposer = input<boolean, boolean | undefined>(true, { transform: (pbValue) => pbValue ?? true });
@@ -154,32 +157,32 @@ export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implement
     readonly allowDelete = input<boolean, boolean | undefined>(false, { transform: (pbValue) => !!pbValue });
     readonly allowAttach = input<boolean, boolean | undefined>(false, { transform: (pbValue) => !!pbValue });
     readonly allowMail = input<boolean, boolean | undefined>(false, { transform: (pbValue) => !!pbValue });
-    readonly pendingAttachments = input<HvoChatPendingAttachment[]>(undefined);
+    readonly pendingAttachments = input<HvoChatPendingAttachment[]>();
     readonly autoScroll = input<boolean, boolean | undefined>(true, { transform: (pbValue) => pbValue ?? true });
     readonly maxContentWidth = input<number, number | undefined>(cnDefaultMaxWidth, { transform: (pnValue) => pnValue ?? cnDefaultMaxWidth });
-    readonly texts = input<HvoChatThreadTexts>(undefined);
+    readonly texts = input<HvoChatThreadTexts>();
     readonly enabled = input<boolean, boolean | undefined>(true, { transform: (pbValue) => pbValue ?? true });
-    readonly styleClass = input<string>(undefined);
-    readonly tabSeq = input<number>(undefined);
-    readonly visible = input<boolean>(undefined);
+    readonly styleClass = input<string>();
+    readonly tabSeq = input<number>();
+    readonly visible = input<boolean>();
 
     // --- Handler ---
-    readonly onSubmit = input<(text: string, event: JSEvent) => Promise<boolean>>(undefined);
-    readonly onCancel = input<(event: JSEvent) => Promise<unknown>>(undefined);
-    readonly onReload = input<(messageId: string, event: JSEvent) => Promise<unknown>>(undefined);
-    readonly onEdit = input<(messageId: string, text: string, event: JSEvent) => Promise<unknown>>(undefined);
-    readonly onFeedback = input<(messageId: string, feedback: string, event: JSEvent) => Promise<unknown>>(undefined);
-    readonly onFeedbackComment = input<(messageId: string, comment: string, event: JSEvent) => Promise<unknown>>(undefined);
-    readonly onBranchChange = input<(messageId: string, branchNumber: number, event: JSEvent) => Promise<unknown>>(undefined);
-    readonly onSourceClick = input<(messageId: string, sourceIndex: number, event: JSEvent) => Promise<unknown>>(undefined);
-    readonly onDelete = input<(messageId: string, event: JSEvent) => Promise<unknown>>(undefined);
-    readonly onAttachmentClick = input<(messageId: string, attachmentIndex: number, event: JSEvent) => Promise<unknown>>(undefined);
-    readonly onAttachClick = input<(event: JSEvent) => Promise<unknown>>(undefined);
-    readonly onPendingRemove = input<(attachmentIndex: number, event: JSEvent) => Promise<unknown>>(undefined);
-    readonly onAttachmentRemove = input<(messageId: string, attachmentIndex: number, event: JSEvent) => Promise<unknown>>(undefined);
-    readonly onEditAttach = input<(messageId: string, event: JSEvent) => Promise<unknown>>(undefined);
-    readonly onEditCancel = input<(messageId: string, event: JSEvent) => Promise<unknown>>(undefined);
-    readonly onMailClick = input<(event: JSEvent) => Promise<unknown>>(undefined);
+    readonly onSubmit = input<(text: string, event: JSEvent) => Promise<boolean>>();
+    readonly onCancel = input<(event: JSEvent) => Promise<unknown>>();
+    readonly onReload = input<(messageId: string, event: JSEvent) => Promise<unknown>>();
+    readonly onEdit = input<(messageId: string, text: string, event: JSEvent) => Promise<unknown>>();
+    readonly onFeedback = input<(messageId: string, feedback: string, event: JSEvent) => Promise<unknown>>();
+    readonly onFeedbackComment = input<(messageId: string, comment: string, event: JSEvent) => Promise<unknown>>();
+    readonly onBranchChange = input<(messageId: string, branchNumber: number, event: JSEvent) => Promise<unknown>>();
+    readonly onSourceClick = input<(messageId: string, sourceIndex: number, event: JSEvent) => Promise<unknown>>();
+    readonly onDelete = input<(messageId: string, event: JSEvent) => Promise<unknown>>();
+    readonly onAttachmentClick = input<(messageId: string, attachmentIndex: number, event: JSEvent) => Promise<unknown>>();
+    readonly onAttachClick = input<(event: JSEvent) => Promise<unknown>>();
+    readonly onPendingRemove = input<(attachmentIndex: number, event: JSEvent) => Promise<unknown>>();
+    readonly onAttachmentRemove = input<(messageId: string, attachmentIndex: number, event: JSEvent) => Promise<unknown>>();
+    readonly onEditAttach = input<(messageId: string, event: JSEvent) => Promise<unknown>>();
+    readonly onEditCancel = input<(messageId: string, event: JSEvent) => Promise<unknown>>();
+    readonly onMailClick = input<(event: JSEvent) => Promise<unknown>>();
 
     readonly viewport = viewChild<ElementRef<HTMLDivElement>>('viewport');
     readonly composer = viewChild(HvoChatComposerCore);
@@ -215,9 +218,7 @@ export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implement
     private copiedTimer: ReturnType<typeof setTimeout> | undefined;
     private unlistenMenu: (() => void) | undefined;
 
-    constructor(renderer: Renderer2, cdRef: ChangeDetectorRef, private servoyService: ServoyPublicService) {
-        super(renderer, cdRef);
-    }
+    private readonly servoyService = inject(ServoyPublicService);
 
     svyOnInit(): void {
         super.svyOnInit();
@@ -816,6 +817,6 @@ export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implement
      * @returns {JSEvent}
      */
     private createEvent(poEvent: Event, pcType: string): JSEvent {
-        return this.servoyService.createJSEvent(poEvent ?? { target: this.getNativeElement() }, pcType);
+        return this.servoyService.createJSEvent((poEvent ?? { target: this.getNativeElement() }) as EventLike, pcType);
     }
 }

@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, Renderer2, SimpleChanges, computed, input, linkedSignal, output, viewChild } from '@angular/core';
-import { JSEvent, ServoyBaseComponent, ServoyPublicService } from '@servoy/public';
+import { ChangeDetectionStrategy, Component, OnDestroy, SimpleChanges, computed, input, linkedSignal, output, viewChild, inject } from '@angular/core';
+import { EventLike, JSEvent, ServoyBaseComponent, ServoyPublicService } from '@servoy/public';
 import { HVOCHAT_FEEDBACK_DEFAULT_TEXTS, HvoChatFeedbackCore, HvoChatFeedbackTexts, HvoChatFeedbackValue } from '../shared/feedback/feedback-core';
 
 /** Ueberschreibbare Texte - .spec-Typ "feedbackTexts" */
@@ -21,28 +21,29 @@ const cnDefaultCommentMaxLength = 1000;
     templateUrl: './feedback.html',
     styleUrls: ['./feedback.css'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
+    standalone: true,
+    imports: [HvoChatFeedbackCore]
 })
 export class HvoChatFeedback extends ServoyBaseComponent<HTMLDivElement> implements OnDestroy {
 
     // --- Model (1:1 zur .spec) ---
-    readonly dataProviderID = input<HvoChatFeedbackValue | null>(undefined);
+    readonly dataProviderID = input<HvoChatFeedbackValue | null>();
     readonly dataProviderIDChange = output<HvoChatFeedbackValue | null>();
-    readonly contextId = input<string>(undefined);
-    readonly label = input<string>(undefined);
+    readonly contextId = input<string>();
+    readonly label = input<string>();
     readonly allowComment = input<boolean, boolean | undefined>(false, { transform: (pbValue) => !!pbValue });
     readonly commentMaxLength = input<number, number | undefined>(cnDefaultCommentMaxLength, {
         transform: (pnValue) => (pnValue && pnValue > 0 ? pnValue : cnDefaultCommentMaxLength)
     });
-    readonly texts = input<HvoChatFeedbackTextOverrides>(undefined);
+    readonly texts = input<HvoChatFeedbackTextOverrides>();
     readonly enabled = input<boolean, boolean | undefined>(true, { transform: (pbValue) => pbValue ?? true });
-    readonly styleClass = input<string>(undefined);
-    readonly tabSeq = input<number>(undefined);
-    readonly visible = input<boolean>(undefined);
+    readonly styleClass = input<string>();
+    readonly tabSeq = input<number>();
+    readonly visible = input<boolean>();
 
     // --- Handler ---
-    readonly onFeedback = input<(contextId: string, feedback: string, event: JSEvent) => Promise<unknown>>(undefined);
-    readonly onFeedbackComment = input<(contextId: string, comment: string, event: JSEvent) => Promise<unknown>>(undefined);
+    readonly onFeedback = input<(contextId: string, feedback: string, event: JSEvent) => Promise<unknown>>();
+    readonly onFeedbackComment = input<(contextId: string, comment: string, event: JSEvent) => Promise<unknown>>();
 
     readonly core = viewChild(HvoChatFeedbackCore);
 
@@ -59,9 +60,7 @@ export class HvoChatFeedback extends ServoyBaseComponent<HTMLDivElement> impleme
         return loResult;
     });
 
-    constructor(renderer: Renderer2, cdRef: ChangeDetectorRef, private servoyService: ServoyPublicService) {
-        super(renderer, cdRef);
-    }
+    private readonly servoyService = inject(ServoyPublicService);
 
     svyOnInit(): void {
         super.svyOnInit();
@@ -108,7 +107,7 @@ export class HvoChatFeedback extends ServoyBaseComponent<HTMLDivElement> impleme
             this.value.set(pcFeedback);
             this.dataProviderIDChange.emit(pcFeedback);
         }
-        this.onFeedback()?.(this.contextId() ?? '', pcFeedback, this.servoyService.createJSEvent(poEvent, 'onFeedback'));
+        this.onFeedback()?.(this.contextId() ?? '', pcFeedback, this.servoyService.createJSEvent(poEvent as EventLike, 'onFeedback'));
     }
 
     /**
@@ -118,7 +117,7 @@ export class HvoChatFeedback extends ServoyBaseComponent<HTMLDivElement> impleme
      */
     onComment(pcComment: string, poEvent: Event): void {
         if (!pcComment) return;
-        this.onFeedbackComment()?.(this.contextId() ?? '', pcComment, this.servoyService.createJSEvent(poEvent, 'onFeedbackComment'));
+        this.onFeedbackComment()?.(this.contextId() ?? '', pcComment, this.servoyService.createJSEvent(poEvent as EventLike, 'onFeedbackComment'));
     }
 
     /**

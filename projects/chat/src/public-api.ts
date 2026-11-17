@@ -1,7 +1,6 @@
 /*
  * Public API von @hvo/chat
  */
-export * from './chat.module';
 export * from './composer/composer';
 export * from './thread/thread';
 export * from './feedback/feedback';
