@@ -18,7 +18,21 @@
     </div>
   </div>
   <div>
-    <h3 style="margin:0 0 8px">hvochat-composer (Responsive)</h3>
+    <h3 style="margin:0 0 8px">hvochat-thread als Ticket-Verlauf (message.kind)</h3>
+    <div class="demo-hvo-theme" id="entryThreadHost" style="height: 420px; border: 1px dashed #bbb;">
+      <hvochat-thread #entryThread
+        [servoyApi]="entryApi" name="thread2"
+        [messages]="entries" [maxContentWidth]="0"
+        [showAuthor]="true" [showTimestamp]="true" [allowDelete]="true" [allowAttach]="true" [allowEdit]="false"
+        [allowCopy]="false" [allowReload]="false" [allowSpeak]="false" [allowExportMarkdown]="false"
+        placeholderText="Kommentar schreiben …"
+        [pendingAttachments]="pending"
+        [onSubmit]="onEntrySubmit" [onEdit]="onEntryEdit" [onDelete]="onEntryDelete"
+        [onAttachmentClick]="onEntryAttachmentClick" [onAttachClick]="onEntryAttachClick" [onPendingRemove]="onEntryPendingRemove">
+      </hvochat-thread>
+    </div>
+
+    <h3 style="margin:24px 0 8px">hvochat-composer (Responsive)</h3>
     <hvochat-composer [servoyApi]="composerApi" name="composer1" [onSubmit]="onComposerSubmit" [maxHeight]="120"></hvochat-composer>
 
     <h3 style="margin:24px 0 8px">hvochat-feedback A (Label, Kommentar, contextId)</h3>

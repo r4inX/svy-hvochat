@@ -4,7 +4,7 @@
 // reasoning.tsx, sources.tsx @ b6444661cf03cae6c5e10baba1e12c9e010b8ea0 - siehe THIRD_PARTY_NOTICES.md
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, Renderer2, SimpleChanges, computed, input, signal, viewChild } from '@angular/core';
 import { JSEvent, ServoyBaseComponent, ServoyPublicService } from '@servoy/public';
-import { HvoChatComposerCore, HvoChatSubmitEvent, HvoChatSubmitMode } from '../shared/composer-core/composer-core';
+import { HvoChatComposerCore, HvoChatPendingAttachment, HvoChatSubmitEvent, HvoChatSubmitMode } from '../shared/composer-core/composer-core';
 import { HVOCHAT_FEEDBACK_DEFAULT_TEXTS, HvoChatFeedbackTexts } from '../shared/feedback/feedback-core';
 import { renderChatText } from '../shared/markdown/markdown.pipe';
 
@@ -16,6 +16,18 @@ export interface HvoChatSource {
     snippet?: string;
     label?: string;
 }
+
+/** Anhang eines Eintrags - .spec-Typ "attachment" */
+export interface HvoChatAttachment {
+    id?: string;
+    name?: string;
+    size?: string;
+    mimeType?: string;
+    icon?: string;
+}
+
+/** Eintragsart (Ticket-Verlauf) - ohne kind wird nach role gerendert */
+export type HvoChatMessageKind = 'comment' | 'mail_in' | 'mail_out' | 'document' | 'time' | 'system' | 'appointment' | 'task' | 'address';
 
 /** Nachricht - .spec-Typ "message" */
 export interface HvoChatMessage {
@@ -33,6 +45,16 @@ export interface HvoChatMessage {
     /** true: keine Daumen/Kommentarbox fuer diese Nachricht (z. B. aeltere Nachrichten ohne Backend-request_id) */
     feedbackDisabled?: boolean;
     createdAt?: Date;
+    kind?: HvoChatMessageKind;
+    authorName?: string;
+    authorInitials?: string;
+    displayTime?: string;
+    badge?: string;
+    badgeStyle?: 'neutral' | 'info' | 'warning' | 'success' | 'danger';
+    meta?: string;
+    attachments?: HvoChatAttachment[];
+    canEdit?: boolean;
+    canDelete?: boolean;
 }
 
 /** Vorschlag im leeren Zustand - .spec-Typ "suggestion" */
@@ -66,7 +88,11 @@ const coDefaultTexts = {
     sources: 'Quellen',
     reasoning: 'Denkprozess',
     send: 'Nachricht senden',
-    cancel: 'Antwort abbrechen'
+    cancel: 'Antwort abbrechen',
+    delete: 'Löschen',
+    attach: 'Datei anhängen',
+    removeAttachment: 'Entfernen',
+    mail: 'E-Mail schreiben'
 };
 
 /** Schluessel der ueberschreibbaren Texte - .spec-Typ "threadTexts" */
@@ -102,6 +128,8 @@ export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implement
     readonly busy = input<boolean, boolean | undefined>(false, { transform: (pbValue) => !!pbValue });
     readonly welcomeText = input<string, string | undefined>('Wie kann ich helfen?', { transform: (pcValue) => pcValue ?? 'Wie kann ich helfen?' });
     readonly placeholderText = input<string, string | undefined>('Nachricht eingeben …', { transform: (pcValue) => pcValue ?? 'Nachricht eingeben …' });
+    readonly welcomeIcon = input<string>(undefined);
+    readonly welcomeSubText = input<string>(undefined);
     readonly submitMode = input<HvoChatSubmitMode, HvoChatSubmitMode | undefined>('enter', { transform: (pcValue) => pcValue ?? 'enter' });
     readonly maxLength = input<number, number | undefined>(0, { transform: (pnValue) => pnValue ?? 0 });
     readonly showComposer = input<boolean, boolean | undefined>(true, { transform: (pbValue) => pbValue ?? true });
@@ -120,6 +148,13 @@ export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implement
     readonly showSources = input<boolean, boolean | undefined>(true, { transform: (pbValue) => pbValue ?? true });
     readonly showReasoning = input<boolean, boolean | undefined>(true, { transform: (pbValue) => pbValue ?? true });
     readonly suggestionAutoSend = input<boolean, boolean | undefined>(true, { transform: (pbValue) => pbValue ?? true });
+    readonly newestFirst = input<boolean, boolean | undefined>(false, { transform: (pbValue) => !!pbValue });
+    readonly showAuthor = input<boolean, boolean | undefined>(false, { transform: (pbValue) => !!pbValue });
+    readonly showTimestamp = input<boolean, boolean | undefined>(false, { transform: (pbValue) => !!pbValue });
+    readonly allowDelete = input<boolean, boolean | undefined>(false, { transform: (pbValue) => !!pbValue });
+    readonly allowAttach = input<boolean, boolean | undefined>(false, { transform: (pbValue) => !!pbValue });
+    readonly allowMail = input<boolean, boolean | undefined>(false, { transform: (pbValue) => !!pbValue });
+    readonly pendingAttachments = input<HvoChatPendingAttachment[]>(undefined);
     readonly autoScroll = input<boolean, boolean | undefined>(true, { transform: (pbValue) => pbValue ?? true });
     readonly maxContentWidth = input<number, number | undefined>(cnDefaultMaxWidth, { transform: (pnValue) => pnValue ?? cnDefaultMaxWidth });
     readonly texts = input<HvoChatThreadTexts>(undefined);
@@ -137,6 +172,14 @@ export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implement
     readonly onFeedbackComment = input<(messageId: string, comment: string, event: JSEvent) => Promise<unknown>>(undefined);
     readonly onBranchChange = input<(messageId: string, branchNumber: number, event: JSEvent) => Promise<unknown>>(undefined);
     readonly onSourceClick = input<(messageId: string, sourceIndex: number, event: JSEvent) => Promise<unknown>>(undefined);
+    readonly onDelete = input<(messageId: string, event: JSEvent) => Promise<unknown>>(undefined);
+    readonly onAttachmentClick = input<(messageId: string, attachmentIndex: number, event: JSEvent) => Promise<unknown>>(undefined);
+    readonly onAttachClick = input<(event: JSEvent) => Promise<unknown>>(undefined);
+    readonly onPendingRemove = input<(attachmentIndex: number, event: JSEvent) => Promise<unknown>>(undefined);
+    readonly onAttachmentRemove = input<(messageId: string, attachmentIndex: number, event: JSEvent) => Promise<unknown>>(undefined);
+    readonly onEditAttach = input<(messageId: string, event: JSEvent) => Promise<unknown>>(undefined);
+    readonly onEditCancel = input<(messageId: string, event: JSEvent) => Promise<unknown>>(undefined);
+    readonly onMailClick = input<(event: JSEvent) => Promise<unknown>>(undefined);
 
     readonly viewport = viewChild<ElementRef<HTMLDivElement>>('viewport');
     readonly composer = viewChild(HvoChatComposerCore);
@@ -178,13 +221,13 @@ export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implement
 
     svyOnInit(): void {
         super.svyOnInit();
-        this.scheduleScrollToBottom(false);
+        if (this.newestFirst()) this.scheduleScrollToTop(false); else this.scheduleScrollToBottom(false);
     }
 
     svyOnChanges(changes: SimpleChanges): void {
         super.svyOnChanges(changes);
         // Auch Aenderungen mit gleicher Referenz (Streaming) kommen hier an
-        if (changes['messages'] && this.autoScroll() && this.atBottom()) this.scheduleScrollToBottom(false);
+        if (changes['messages'] && !this.newestFirst() && this.autoScroll() && this.atBottom()) this.scheduleScrollToBottom(false);
     }
 
     ngOnDestroy(): void {
@@ -211,6 +254,11 @@ export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implement
         return !this.messages()?.length;
     }
 
+    /** @returns {boolean} true, wenn der leere Zustand als Hinweis (Symbol/Zusatzzeile) mit unten fixiertem Eingabefeld erscheint */
+    isRichEmpty(): boolean {
+        return this.isEmpty() && (!!this.welcomeIcon() || !!this.welcomeSubText());
+    }
+
     /** @returns {string|null} max-width des Inhalts */
     contentWidth(): string | null {
         return this.maxContentWidth() > 0 ? `${this.maxContentWidth()}px` : null;
@@ -234,6 +282,68 @@ export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implement
      */
     isReasoningOpen(poMsg: HvoChatMessage, pbLast: boolean): boolean {
         return this.expandedReasoning().has(poMsg.id) || (this.isRunning(poMsg, pbLast) && !poMsg.text);
+    }
+
+    /**
+     * Ist dieser Eintrag ein Verlaufseintrag (message.kind gesetzt)? Dann gilt die Darstellung als Karte statt Chat-Blase.
+     * @param {HvoChatMessage} poMsg
+     * @returns {boolean}
+     */
+    isEntry(poMsg: HvoChatMessage): boolean {
+        return !!poMsg.kind;
+    }
+
+    /**
+     * Zentrierte Zeile (Statuswechsel, Zeitbuchung) statt Karte.
+     * @param {HvoChatMessage} poMsg
+     * @returns {boolean}
+     */
+    isSystemLine(poMsg: HvoChatMessage): boolean {
+        return poMsg.kind === 'system' || poMsg.kind === 'time';
+    }
+
+    /**
+     * Kuerzel im Kreis (Vorgabe, sonst die Anfangsbuchstaben des Namens).
+     * @param {HvoChatMessage} poMsg
+     * @returns {string}
+     */
+    initials(poMsg: HvoChatMessage): string {
+        if (poMsg.authorInitials) return poMsg.authorInitials;
+        const laParts = (poMsg.authorName ?? '').trim().split(/\s+/).filter(Boolean);
+        if (!laParts.length) return '';
+        const lcFirst = laParts[0].charAt(0);
+        const lcLast = laParts.length > 1 ? laParts[laParts.length - 1].charAt(0) : '';
+        return (lcFirst + lcLast).toUpperCase();
+    }
+
+    /**
+     * Angezeigter Zeitpunkt (displayTime, sonst lokal formatiertes createdAt).
+     * @param {HvoChatMessage} poMsg
+     * @returns {string}
+     */
+    entryTime(poMsg: HvoChatMessage): string {
+        if (poMsg.displayTime) return poMsg.displayTime;
+        if (!poMsg.createdAt) return '';
+        const ldDate = new Date(poMsg.createdAt);
+        return isNaN(ldDate.getTime()) ? '' : ldDate.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
+    }
+
+    /**
+     * Darf der Eintrag bearbeitet werden? Verlaufseintraege nur mit canEdit, Chat-Nachrichten wie bisher ueber allowEdit.
+     * @param {HvoChatMessage} poMsg
+     * @returns {boolean}
+     */
+    canEditEntry(poMsg: HvoChatMessage): boolean {
+        return !!poMsg.canEdit && !!this.onEdit() && this.enabled() && !this.busy();
+    }
+
+    /**
+     * Darf der Eintrag geloescht werden?
+     * @param {HvoChatMessage} poMsg
+     * @returns {boolean}
+     */
+    canDeleteEntry(poMsg: HvoChatMessage): boolean {
+        return this.allowDelete() && !!poMsg.canDelete && !!this.onDelete() && this.enabled() && !this.busy();
     }
 
     /**
@@ -286,7 +396,7 @@ export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implement
         const lfnHandler = this.onSubmit();
         if (!lfnHandler) return;
         this.composerText.set('');
-        this.scheduleScrollToBottom(true);
+        if (this.newestFirst()) this.scheduleScrollToTop(true); else this.scheduleScrollToBottom(true);
         const lfnRestore = (): void => {
             if (this.composerText() !== '') return;
             this.composerText.set(pcText);
@@ -466,9 +576,14 @@ export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implement
         });
     }
 
-    /** Bricht die Bearbeitung ab. */
-    cancelEdit(): void {
+    /**
+     * Bricht die Bearbeitung ab und meldet es (z. B. zum Verwerfen vorgemerkter Anhaenge).
+     * @param {Event} [poEvent]
+     */
+    cancelEdit(poEvent?: Event): void {
+        const lcId = this.editingId();
         this.editingId.set(null);
+        if (lcId) this.onEditCancel()?.(lcId, this.createEvent(poEvent as Event, 'onEditCancel'));
     }
 
     /**
@@ -479,8 +594,77 @@ export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implement
     saveEdit(poMsg: HvoChatMessage, poEvent: Event): void {
         const lcText = this.editText().trim();
         this.editingId.set(null);
-        if (!lcText || lcText === (poMsg.text ?? '').trim()) return;
+        // Verlaufseintraege melden auch einen unveraenderten Text, da sich Anhaenge geaendert haben koennen
+        if (!lcText || (!poMsg.kind && lcText === (poMsg.text ?? '').trim())) return;
         this.onEdit()?.(poMsg.id, lcText, this.createEvent(poEvent, 'onEdit'));
+    }
+
+    /**
+     * Loeschen eines Eintrags melden. Die Komponente entfernt ihn nicht selbst, das macht der Server.
+     * @param {HvoChatMessage} poMsg
+     * @param {Event} poEvent
+     */
+    deleteEntry(poMsg: HvoChatMessage, poEvent: Event): void {
+        if (!this.canDeleteEntry(poMsg)) return;
+        this.onDelete()?.(poMsg.id, this.createEvent(poEvent, 'onDelete'));
+    }
+
+    /**
+     * Klick auf einen Anhang eines Eintrags.
+     * @param {HvoChatMessage} poMsg
+     * @param {number} pnIndex
+     * @param {Event} poEvent
+     */
+    attachmentClick(poMsg: HvoChatMessage, pnIndex: number, poEvent: Event): void {
+        poEvent.preventDefault();
+        if (!this.enabled()) return;
+        this.onAttachmentClick()?.(poMsg.id, pnIndex, this.createEvent(poEvent, 'onAttachmentClick'));
+    }
+
+    /**
+     * Entfernt beim Bearbeiten einen Anhang des Eintrags.
+     * @param {HvoChatMessage} poMsg
+     * @param {number} pnIndex
+     * @param {Event} poEvent
+     */
+    removeAttachment(poMsg: HvoChatMessage, pnIndex: number, poEvent: Event): void {
+        poEvent.preventDefault();
+        if (!this.enabled()) return;
+        this.onAttachmentRemove()?.(poMsg.id, pnIndex, this.createEvent(poEvent, 'onAttachmentRemove'));
+    }
+
+    /**
+     * Beim Bearbeiten eines Eintrags eine Datei hinzufuegen.
+     * @param {HvoChatMessage} poMsg
+     * @param {Event} poEvent
+     */
+    editAttach(poMsg: HvoChatMessage, poEvent: Event): void {
+        if (!this.enabled()) return;
+        this.onEditAttach()?.(poMsg.id, this.createEvent(poEvent, 'onEditAttach'));
+    }
+
+    /**
+     * Klick auf das E-Mail-Symbol im Eingabefeld.
+     * @param {Event} poEvent
+     */
+    onComposerMail(poEvent: Event): void {
+        this.onMailClick()?.(this.createEvent(poEvent, 'onMailClick'));
+    }
+
+    /**
+     * Klick auf die Bueroklammer im Eingabefeld.
+     * @param {Event} poEvent
+     */
+    onComposerAttach(poEvent: Event): void {
+        this.onAttachClick()?.(this.createEvent(poEvent, 'onAttachClick'));
+    }
+
+    /**
+     * Entfernt einen vorgemerkten Anhang.
+     * @param {{index: number, event: Event}} poRemove
+     */
+    onComposerPendingRemove(poRemove: { index: number; event: Event }): void {
+        this.onPendingRemove()?.(poRemove.index, this.createEvent(poRemove.event, 'onPendingRemove'));
     }
 
     /**
@@ -565,6 +749,19 @@ export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implement
     }
 
     /**
+     * Scrollt nach dem naechsten Rendern an den Anfang.
+     * @param {boolean} pbSmooth
+     */
+    private scheduleScrollToTop(pbSmooth: boolean): void {
+        cancelAnimationFrame(this.scrollFrame);
+        this.scrollFrame = requestAnimationFrame(() => {
+            const lelView = this.viewport()?.nativeElement;
+            if (!lelView) return;
+            lelView.scrollTo({ top: 0, behavior: pbSmooth ? 'smooth' : 'auto' });
+        });
+    }
+
+    /**
      * Scrollt nach dem naechsten Rendern ans Ende.
      * @param {boolean} pbSmooth
      */
@@ -579,6 +776,11 @@ export class HvoChatThread extends ServoyBaseComponent<HTMLDivElement> implement
     }
 
     // --- API ---
+
+    /** Scrollt an den Anfang des Verlaufs. */
+    scrollToTop(): void {
+        this.scheduleScrollToTop(true);
+    }
 
     /** Scrollt ans Ende des Verlaufs. */
     scrollToBottom(): void {

@@ -108,6 +108,13 @@ function onChatSubmit(text, event) {
 | `feedback` | gewählter Daumen: `positive` / `negative` / `null` |
 | `feedbackDisabled` | `true` blendet Daumen und Kommentar für diese Nachricht aus |
 | `createdAt` | Zeitstempel |
+| `kind` | Verlaufseintrag (Ticket-Verlauf) statt Chat-Nachricht: `comment`, `mail_in`, `mail_out`, `document`, `time`, `system`, `appointment`, `task`, `address`. Ohne `kind` gilt `role`. `time` und `system` erscheinen als zentrierte Zeile. |
+| `authorName`, `authorInitials` | Autor mit Kürzel-Kreis (nur mit `showAuthor`) |
+| `displayTime` | fertig formatierter Zeitpunkt (nur mit `showTimestamp`), sonst `createdAt` |
+| `badge`, `badgeStyle` | kleines Etikett (`neutral`, `info`, `warning`, `success`, `danger`) |
+| `meta` | Zusatzzeile, z. B. Mail-Betreff |
+| `attachments` | Anhänge (`id`, `name`, `size`, `mimeType`, `icon`), Klick meldet `onAttachmentClick` |
+| `canEdit`, `canDelete` | Bearbeiten (`onEdit`) bzw. Löschen (`onDelete`, nur mit `allowDelete`) pro Eintrag |
 
 **Handler** (alle optional; ohne Handler wird der zugehörige Button ausgeblendet):
 
@@ -121,14 +128,23 @@ function onChatSubmit(text, event) {
 | `onFeedbackComment` | `messageId`, `comment`, `event` (nur mit `allowFeedbackComment`) |
 | `onBranchChange` | `messageId`, `branchNumber`, `event` |
 | `onSourceClick` | `messageId`, `sourceIndex`, `event` (ohne Handler wird `source.url` geöffnet) |
+| `onDelete` | `messageId`, `event` (nur mit `allowDelete` und `message.canDelete`; der Server entfernt den Eintrag) |
+| `onAttachmentClick` | `messageId`, `attachmentIndex`, `event` |
+| `onAttachClick` | `event` (Büroklammer im Eingabefeld, nur mit `allowAttach`; der Server setzt danach `pendingAttachments`) |
+| `onPendingRemove` | `attachmentIndex`, `event` (x am vorgemerkten Anhang) |
+| `onEditCancel` | `messageId`, `event` (Abbrechen/Escape beim Bearbeiten eines Eintrags) |
+| `onMailClick` | `event` (E-Mail-Symbol im Eingabefeld, nur mit `allowMail`) |
+| `onAttachmentRemove` | `messageId`, `attachmentIndex`, `event` (x am Anhang beim Bearbeiten eines Eintrags) |
+| `onEditAttach` | `messageId`, `event` ("Datei anhängen" beim Bearbeiten eines Eintrags, nur mit `allowAttach`) |
 
 **Wichtige Properties:**
 - `busy`
-- `welcomeText`, `placeholderText`, `suggestions`
+- `welcomeText`, `welcomeIcon`, `welcomeSubText`, `placeholderText`, `suggestions`
 - `showComposer`, `markdown`
 - `allowCopy`, `allowEdit`, `allowReload`, `allowFeedback`, `allowFeedbackComment`, `allowSpeak`, `allowExportMarkdown`
 - `showBranchPicker`, `showSources`, `showReasoning`
 - `maxContentWidth`
+- Verlauf: `showAuthor`, `showTimestamp`, `allowDelete`, `allowAttach`, `pendingAttachments`, `newestFirst`
 - `texts` (alle Beschriftungen, Standard Deutsch)
 
 Die vollständige Doku steht in [`thread/thread_doc.js`](thread/thread_doc.js) und ist in Servoy per Codevervollständigung sichtbar.
@@ -253,6 +269,8 @@ Services (`plugins.xyz`) brauchen ein **eigenes** Package, weil ein Package gena
 
 | Version | Änderungen |
 | --- | --- |
+| 1.1.1 | Thread: Eingabefeld (Composer, Anhänge, E-Mail, Vorschläge) ist ein eigenständiger Layer unterhalb des Scrollbereichs und behält immer seine Position unten. Nur der Verlauf scrollt. Der Button „Nach unten scrollen“ sitzt unten im Scrollbereich. |
+| 1.1.0 | Thread als Ticket-Verlauf nutzbar (alles optional, Standardverhalten wie 1.0.4): `message.kind` (`comment`, `mail_in`, `mail_out`, `document`, `time`, `system`, `appointment`, `task`, `address`) mit Autor, Zeit, Badge, Zusatzzeile und Anhängen, Bearbeiten und Löschen pro Eintrag (`canEdit`, `canDelete`, `allowDelete`, `onEdit`, `onDelete`, `onEditCancel`), Anhänge beim Bearbeiten entfernen und hinzufügen (`onAttachmentRemove`, `onEditAttach`), Büroklammer und E-Mail-Symbol im Eingabefeld mit vorgemerkten Anhängen (`allowAttach`, `allowMail`, `pendingAttachments`, `onAttachClick`, `onMailClick`, `onPendingRemove`), neuer Typ `attachment` und Handler `onAttachmentClick`, leerer Zustand als Hinweis mit Symbol und Zusatzzeile (`welcomeIcon`, `welcomeSubText`, Eingabefeld bleibt unten), neueste Einträge oben (`newestFirst`, API `scrollToTop`). Einträge werden als reiner Text dargestellt (kein HTML). |
 | 1.0.4 | Thread: „Antwort wird erzeugt“-Indikator als animierte Drei-Punkte-Anzeige (Typing Indicator) statt eines pulsierenden Punkts. Ohne Animation (`prefers-reduced-motion`) bleiben alle drei Punkte sichtbar. |
 | 1.0.3 | Thread: optionales Kommentarfeld bei 👎 (`allowFeedbackComment`, `feedbackCommentMaxLength`, `onFeedbackComment`) und `message.feedbackDisabled`. Neues Element `hvochat-feedback`. Gemeinsamer Feedback-Baustein. Neues Werkzeug `npm run set-version`. |
 | 1.0.2 | Antwort-Bubble über CSS-Variablen (`--hvochat-assistant-*`, `--hvochat-inset-bg`, `--hvochat-source-bg`) |

@@ -3,7 +3,8 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 /** Verfuegbare Icon-Namen (Pfaddaten aus Lucide, ISC-Lizenz, https://lucide.dev) */
 export type HvoChatIconName =
     'arrow-up' | 'arrow-down' | 'square' | 'copy' | 'check' | 'pencil' | 'refresh' | 'thumbs-up' | 'thumbs-down' |
-    'more' | 'download' | 'chevron-left' | 'chevron-right' | 'chevron-down' | 'volume' | 'lightbulb' | 'file-text';
+    'more' | 'download' | 'chevron-left' | 'chevron-right' | 'chevron-down' | 'volume' | 'lightbulb' | 'file-text' |
+    'paperclip' | 'trash' | 'x' | 'mail';
 
 /**
  * Interne Icon-Komponente (keine Servoy-Komponente, keine .spec).
@@ -31,6 +32,10 @@ export type HvoChatIconName =
     @case ('chevron-down') { <svg:path d="m6 9 6 6 6-6"/> }
     @case ('volume') { <svg:path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><svg:path d="M16 9a5 5 0 0 1 0 6"/><svg:path d="M19.364 18.364a9 9 0 0 0 0-12.728"/> }
     @case ('lightbulb') { <svg:path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><svg:path d="M9 18h6"/><svg:path d="M10 22h4"/> }
+    @case ('mail') { <svg:rect width="20" height="16" x="2" y="4" rx="2"/><svg:path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/> }
+    @case ('paperclip') { <svg:path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/> }
+    @case ('trash') { <svg:path d="M3 6h18"/><svg:path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><svg:path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/> }
+    @case ('x') { <svg:path d="M18 6 6 18"/><svg:path d="m6 6 12 12"/> }
     @case ('file-text') { <svg:path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><svg:path d="M14 2v4a2 2 0 0 0 2 2h4"/><svg:path d="M16 13H8"/><svg:path d="M16 17H8"/><svg:path d="M10 9H8"/> }
   }
 </svg>`,

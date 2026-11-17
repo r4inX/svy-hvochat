@@ -34,9 +34,56 @@ var welcomeText;
 var placeholderText;
 
 /**
+ * CSS-Klassen eines Symbols im leeren Zustand, z. B. 'fas fa-comments'. Mit welcomeIcon oder welcomeSubText wird der
+ * leere Zustand als zentrierter Hinweis (Symbol, Titel, Zusatzzeile) dargestellt.
+ */
+var welcomeIcon;
+
+/**
+ * Zweite, kleinere Zeile unter welcomeText im leeren Zustand.
+ */
+var welcomeSubText;
+
+/**
  * Absende-Modus: 'enter', 'ctrlEnter' oder 'none'.
  */
 var submitMode;
+
+/**
+ * true: neueste Eintraege stehen oben. Der Verlauf startet am oberen Rand, scrollt beim Senden nach oben und der
+ * Button "Nach unten scrollen" entfaellt. Standard false.
+ */
+var newestFirst;
+
+/**
+ * Verlaufseintraege (message.kind): Autor mit Kuerzel-Kreis und Name anzeigen. Standard false.
+ */
+var showAuthor;
+
+/**
+ * Verlaufseintraege (message.kind): Zeitpunkt anzeigen (message.displayTime, sonst createdAt). Standard false.
+ */
+var showTimestamp;
+
+/**
+ * Eintraege mit message.canDelete koennen geloescht werden (onDelete). Standard false.
+ */
+var allowDelete;
+
+/**
+ * Bueroklammer im Eingabefeld (onAttachClick). Standard false.
+ */
+var allowAttach;
+
+/**
+ * E-Mail-Symbol im Eingabefeld neben der Bueroklammer (onMailClick). Standard false.
+ */
+var allowMail;
+
+/**
+ * Vorgemerkte Anhaenge ueber dem Eingabefeld (Typ attachment[]), mit x entfernbar (onPendingRemove).
+ */
+var pendingAttachments;
 
 /**
  * Maximale Zeichenanzahl im Eingabefeld, 0 = unbegrenzt.
@@ -226,8 +273,85 @@ var handlers = {
      * @param {Number} sourceIndex Index in message.sources (0-basiert)
      * @param {JSEvent} event Das ausloesende Event
      */
-    onSourceClick: function() {}
+    onSourceClick: function() {},
+
+    /**
+     * Loeschen eines Eintrags (nur bei allowDelete und message.canDelete). Die Komponente entfernt den Eintrag nicht selbst:
+     * der Server nimmt ihn aus messages.
+     *
+     * @param {String} messageId ID des Eintrags
+     * @param {JSEvent} event Das ausloesende Event
+     */
+    onDelete: function() {},
+
+    /**
+     * Klick auf einen Anhang eines Eintrags.
+     *
+     * @param {String} messageId ID des Eintrags
+     * @param {Number} attachmentIndex Index in message.attachments (0-basiert)
+     * @param {JSEvent} event Das ausloesende Event
+     */
+    onAttachmentClick: function() {},
+
+    /**
+     * Klick auf die Bueroklammer im Eingabefeld (nur bei allowAttach). Der Server oeffnet die Dateiauswahl
+     * und setzt pendingAttachments.
+     *
+     * @param {JSEvent} event Das ausloesende Event
+     */
+    onAttachClick: function() {},
+
+    /**
+     * Bearbeiten eines Eintrags abgebrochen (Abbrechen oder Escape). Der Server kann vorgemerkte Aenderungen
+     * (z. B. Anhaenge) verwerfen.
+     *
+     * @param {String} messageId ID des Eintrags
+     * @param {JSEvent} event Das ausloesende Event
+     */
+    onEditCancel: function() {},
+
+    /**
+     * Klick auf das E-Mail-Symbol im Eingabefeld (nur bei allowMail).
+     *
+     * @param {JSEvent} event Das ausloesende Event
+     */
+    onMailClick: function() {},
+
+    /**
+     * Entfernen eines Anhangs beim Bearbeiten eines Eintrags (x am Anhang, nur mit canEdit). Der Server entfernt den
+     * Anhang und aktualisiert messages.
+     *
+     * @param {String} messageId ID des Eintrags
+     * @param {Number} attachmentIndex Index in message.attachments (0-basiert)
+     * @param {JSEvent} event Das ausloesende Event
+     */
+    onAttachmentRemove: function() {},
+
+    /**
+     * Klick auf "Datei hinzufuegen" beim Bearbeiten eines Eintrags (nur mit allowAttach). Der Server nimmt die Datei
+     * auf und aktualisiert messages.
+     *
+     * @param {String} messageId ID des Eintrags
+     * @param {JSEvent} event Das ausloesende Event
+     */
+    onEditAttach: function() {},
+
+    /**
+     * Entfernen eines vorgemerkten Anhangs (x am Chip).
+     *
+     * @param {Number} attachmentIndex Index in pendingAttachments (0-basiert)
+     * @param {JSEvent} event Das ausloesende Event
+     */
+    onPendingRemove: function() {}
 };
+
+/**
+ * Scrollt an den Anfang des Verlaufs.
+ *
+ * @example %%prefix%%%%elementName%%.scrollToTop();
+ */
+function scrollToTop() {
+}
 
 /**
  * Scrollt ans Ende des Verlaufs.
@@ -372,7 +496,42 @@ var svy_types = {
         /** true: keine Daumen/Kommentarbox fuer diese Nachricht (z. B. aeltere Nachrichten ohne request_id) */
         feedbackDisabled: null,
         /** Zeitstempel */
-        createdAt: null
+        createdAt: null,
+        /** Eintragsart (Ticket-Verlauf): 'comment', 'mail_in', 'mail_out', 'document', 'time', 'system', 'appointment', 'task' oder 'address'. Ohne kind wird nach role gerendert. 'time' und 'system' erscheinen als zentrierte Zeile. */
+        kind: null,
+        /** Name des Autors (Kuerzel-Kreis und Name bei showAuthor) */
+        authorName: null,
+        /** Kuerzel im Kreis (Standard: Anfangsbuchstaben von authorName) */
+        authorInitials: null,
+        /** Fertig formatierter Zeitpunkt (hat Vorrang vor createdAt) */
+        displayTime: null,
+        /** Kleines Etikett, z. B. 'Intern' */
+        badge: null,
+        /** 'neutral', 'info', 'warning', 'success' oder 'danger' */
+        badgeStyle: null,
+        /** Zusatzzeile, z. B. Mail-Betreff */
+        meta: null,
+        /** Anhaenge des Eintrags, Typ attachment[] */
+        attachments: null,
+        /** true: Eintrag kann bearbeitet werden (onEdit), unabhaengig von allowEdit und role */
+        canEdit: null,
+        /** true: Eintrag kann geloescht werden (nur mit allowDelete, onDelete) */
+        canDelete: null
+    },
+    /**
+     * Anhang eines Eintrags bzw. vorgemerkter Anhang.
+     */
+    attachment: {
+        /** Eigene ID, kommt unveraendert in onAttachmentClick-Auswertung des Servers zurueck */
+        id: null,
+        /** Dateiname */
+        name: null,
+        /** Fertig formatierte Groesse, z. B. '120 KB' */
+        size: null,
+        /** MIME-Typ */
+        mimeType: null,
+        /** Reserviert fuer ein Datei-Symbol */
+        icon: null
     },
     /**
      * Quelle einer Antwort.
@@ -407,6 +566,7 @@ var svy_types = {
         copy: null, copied: null, edit: null, reload: null, feedbackPositive: null, feedbackNegative: null,
         speak: null, stopSpeaking: null, more: null, exportMarkdown: null, previous: null, next: null,
         scrollToBottom: null, editCancel: null, editSave: null, sources: null, reasoning: null, send: null, cancel: null,
+        delete: null, attach: null, removeAttachment: null, mail: null,
         /** Feedback-Kommentar: Platzhalter, Senden, Abbrechen, Hinweis (Protokollierung), Bestaetigung */
         feedbackCommentPlaceholder: null, feedbackCommentSubmit: null, feedbackCommentCancel: null,
         feedbackCommentHint: null, feedbackCommentThanks: null

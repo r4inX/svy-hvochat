@@ -46,11 +46,26 @@ export class DemoComponent {
     @ViewChild('feedbackB') feedbackB!: HvoChatFeedback;
 
     readonly threadApi = new DemoServoyApi('thread1', true);
+    readonly entryApi = new DemoServoyApi('thread2', true);
     readonly composerApi = new DemoServoyApi('composer1', false);
     readonly feedbackApiA = new DemoServoyApi('feedbackA', false);
     readonly feedbackApiB = new DemoServoyApi('feedbackB', false);
 
     messages: HvoChatMessage[] = [];
+    /** Ticket-Verlauf: Eintraege mit kind, Autor, Zeit, Badge und Anhaengen */
+    entries: HvoChatMessage[] = [
+        { id: 'e1', role: 'assistant', kind: 'system', text: 'Ticket angelegt', displayTime: '12.10.2026 08:15' },
+        { id: 'e2', role: 'assistant', kind: 'comment', authorName: 'Jan Evdoschenko', displayTime: '12.10.2026 09:02', badge: 'Intern', badgeStyle: 'warning',
+          text: 'Trocknungsfirma ist beauftragt.\nNachmessung folgt am Freitag.', canEdit: true, canDelete: true,
+          attachments: [{ id: 'comment:1', name: 'Schadenbericht.pdf', size: '240 KB' }] },
+        { id: 'e3', role: 'assistant', kind: 'mail_in', authorName: 'Versicherungsmakler Teichmann', displayTime: '13.10.2026 11:05', badge: 'E-Mail', badgeStyle: 'info',
+          meta: 'Eingangsbestaetigung Schadensunterlagen', text: 'Wir bestaetigen den Eingang der Unterlagen.',
+          attachments: [{ id: 'mail:1', name: 'Bestaetigung.pdf', size: '88 KB' }] },
+        { id: 'e4', role: 'assistant', kind: 'time', text: 'Sabine K. hat 1:30 h gebucht (berechnet)', displayTime: '13.10.2026 14:20' },
+        { id: 'e5', role: 'assistant', kind: 'comment', authorName: 'Sabine Kern', displayTime: '14.10.2026 08:40', text: 'Rueckstauklappe wird vom Sanitaerbetrieb geprueft.' }
+    ];
+    /** Vorgemerkte Anhaenge ueber dem Eingabefeld */
+    pending: Array<{ id: string; name: string; size: string }> = [];
     busy = false;
     /** Thread: Kommentarfeld bei Daumen runter (zum Testen der Rueckwaertskompatibilitaet umschaltbar) */
     allowFeedbackComment = true;
@@ -68,6 +83,53 @@ export class DemoComponent {
 
     constructor(private cdRef: ChangeDetectorRef) {
     }
+
+    // Handler des Ticket-Verlaufs (Server schreibt die Eintraege, hier nur simuliert)
+    readonly onEntrySubmit = (pcText: string, poEvent: JSEvent): Promise<boolean> => {
+        this.addLog(`entry.onSubmit("${pcText}", pending=${this.pending.length})`);
+        const laAttachments = this.pending.map((loP) => ({ ...loP }));
+        this.entries = [...this.entries, {
+            id: 'e' + this.id(), role: 'assistant', kind: 'comment', authorName: 'Jan Evdoschenko', displayTime: 'jetzt',
+            text: pcText, canEdit: true, canDelete: true, attachments: laAttachments
+        }];
+        this.pending = [];
+        this.cdRef.markForCheck();
+        return Promise.resolve(true);
+    };
+
+    readonly onEntryEdit = (pcId: string, pcText: string, poEvent: JSEvent): Promise<void> => {
+        this.addLog(`entry.onEdit(${pcId}, "${pcText}")`);
+        const loEntry = this.entries.find((loE) => loE.id === pcId);
+        if (loEntry) loEntry.text = pcText;
+        this.cdRef.markForCheck();
+        return Promise.resolve();
+    };
+
+    readonly onEntryDelete = (pcId: string, poEvent: JSEvent): Promise<void> => {
+        this.addLog(`entry.onDelete(${pcId})`);
+        this.entries = this.entries.filter((loE) => loE.id !== pcId);
+        this.cdRef.markForCheck();
+        return Promise.resolve();
+    };
+
+    readonly onEntryAttachmentClick = (pcId: string, pnIndex: number, poEvent: JSEvent): Promise<void> => {
+        this.addLog(`entry.onAttachmentClick(${pcId}, ${pnIndex})`);
+        return Promise.resolve();
+    };
+
+    readonly onEntryAttachClick = (poEvent: JSEvent): Promise<void> => {
+        this.addLog('entry.onAttachClick()');
+        this.pending = [...this.pending, { id: 'p' + this.id(), name: `Foto_${this.pending.length + 1}.jpg`, size: '1,2 MB' }];
+        this.cdRef.markForCheck();
+        return Promise.resolve();
+    };
+
+    readonly onEntryPendingRemove = (pnIndex: number, poEvent: JSEvent): Promise<void> => {
+        this.addLog(`entry.onPendingRemove(${pnIndex})`);
+        this.pending = this.pending.filter((loP, lnI) => lnI !== pnIndex);
+        this.cdRef.markForCheck();
+        return Promise.resolve();
+    };
 
     // Handler (wie in Servoy: Funktionen, die ein Promise liefern)
     readonly onSubmit = (pcText: string, poEvent: JSEvent): Promise<boolean> => {
